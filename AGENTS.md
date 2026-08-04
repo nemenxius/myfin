@@ -20,7 +20,7 @@ MyFin is a personal finance tracker (expense tracker) built as a Next.js web app
 ```
 app/
   (auth)/login/       # Login page
-  dashboard/          # Dashboard page (statement band, insight banner, chart, ledger)
+  dashboard/          # Dashboard page (stat cards, chart + side panel, ledger)
   dashboard/layout.tsx # Shared dashboard shell (header + nav)
   dashboard/accounts/ # Accounts management page
   layout.tsx          # Root layout — loads brand fonts (Public Sans, Newsreader, IBM Plex Mono)
@@ -30,7 +30,7 @@ app/
 components/
   accounts/           # account-form, account-list, account-types
   brand/              # Logo (SVG wallet mark)
-  dashboard/          # header, balance-overview, insight-banner, spending-chart
+  dashboard/          # header, stat-card, stat-cards, side-panel, spending-chart
   landing/            # header, hero, hero-visual, waitlist-form
   transactions/       # transaction-list (ledger), transaction-form
   ui/                 # Shadcn/Base UI primitives (card, table, button, dialog, etc.)
@@ -122,6 +122,12 @@ supabase db reset    # reset local DB and re-run migrations + seed
 - Full transaction management (create/edit/delete) with AlertDialog delete confirmation and dropdown row actions.
 - Brand-aligned dashboard visual overhaul, then the current statement-style redesign (commit `0b4d679`).
 - **Account Management (2026-08-04):** full CRUD for accounts. `hooks/use-accounts.ts` now exposes `createAccount`/`updateAccount`/`deleteAccount` (all optimistic with rollback + `invalidateQueries`; `createAccount` resolves `user_id` internally). New `components/accounts/` — `account-form.tsx` (create/edit dialog: name, type, starting balance, currency), `account-list.tsx` (calculated balances = `initial_balance` + Σ transactions, delete AlertDialog warns when linked transactions will cascade), `account-types.ts` (shared type→label map; DB values `checking`/`savings`/`cash`/`brokerage`). Shared `components/dashboard/header.tsx` (Overview/Accounts nav + global "Add Account" button) hosted by new `app/dashboard/layout.tsx`; new route `app/dashboard/accounts/page.tsx`. Transaction form shows an empty-state prompting to create an account when none exist.
+
+**Dashboard redesign (2026-08-04):**
+- Replaced the navy "jumbotron" (`components/dashboard/balance-overview.tsx`, deleted) with a responsive row of six stat cards — new `components/dashboard/stat-card.tsx` + `stat-cards.tsx`. Deleted `components/dashboard/insight-banner.tsx`.
+- Added `components/dashboard/side-panel.tsx` (this-month spending with progress bar, category donut + top-3, account balances) and restyled `components/dashboard/spending-chart.tsx`.
+- Rewrote `app/dashboard/page.tsx` to compose: StatCards → chart + side-panel grid (2/3 + 1/3) → TransactionList. No schema or env changes.
+- Note: `npm run lint` is currently broken in this repo — `next lint` was removed in Next 16 and there is no ESLint config.
 
 **Environment & migrations notes:**
 - `.env.local` is in a working state with the real Supabase URL and publishable key.
