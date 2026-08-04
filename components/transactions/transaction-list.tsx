@@ -12,9 +12,8 @@ import {
 } from "@/components/ui/table";
 import { useTransactions } from "@/hooks/use-transactions";
 import { formatCurrency } from "@/lib/format";
-import type { TransactionType } from "@/types/database";
 
-const typeStyles: Record<TransactionType, string> = {
+const typeStyles: Record<string, string> = {
   income: "bg-emerald-100 text-emerald-700",
   expense: "bg-red-100 text-red-700",
   transfer: "bg-zinc-100 text-zinc-700",
@@ -61,7 +60,7 @@ export function TransactionList() {
             <TableCell>
               <Badge
                 variant="outline"
-                className={typeStyles[transaction.transaction_type]}
+                className={typeStyles[transaction.transaction_type] ?? "bg-zinc-100 text-zinc-700"}
               >
                 {transaction.transaction_type}
               </Badge>

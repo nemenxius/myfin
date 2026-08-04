@@ -1,6 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabaseClient } from "@/lib/supabase/client";
-import type { Account, AccountInsert } from "@/types/database";
+import type { Tables, TablesInsert } from "@/types/database";
+
+type Account = Tables<"accounts">;
+type AccountInsert = TablesInsert<"accounts">;
 
 const queryKey = ["accounts"] as const;
 
