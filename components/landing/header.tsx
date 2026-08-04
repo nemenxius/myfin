@@ -23,6 +23,7 @@ export function Header() {
 
       <Button
         render={<Link href="/login" />}
+        nativeButton={false}
         className="rounded-full bg-zinc-800 px-5 text-white hover:bg-zinc-700"
       >
         Sign In
