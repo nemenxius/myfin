@@ -47,10 +47,12 @@ export function AccountForm({
   const [initialBalance, setInitialBalance] = useState("0");
   const [currency, setCurrency] = useState("USD");
   const [errors, setErrors] = useState<FormErrors>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setErrors({});
+    setSubmitError(null);
 
     if (account) {
       setName(account.name);
@@ -80,9 +82,11 @@ export function AccountForm({
     return Object.keys(next).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validate()) return;
+
+    setSubmitError(null);
 
     const payload = {
       name: name.trim(),
@@ -91,13 +95,20 @@ export function AccountForm({
       currency: currency.trim() || "USD",
     };
 
-    if (account) {
-      updateAccount.mutate({ id: account.id, ...payload });
-    } else {
-      createAccount.mutate(payload);
+    try {
+      if (account) {
+        await updateAccount.mutateAsync({ id: account.id, ...payload });
+      } else {
+        await createAccount.mutateAsync(payload);
+      }
+      onOpenChange(false);
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again."
+      );
     }
-
-    onOpenChange(false);
   };
 
   return (
@@ -177,6 +188,12 @@ export function AccountForm({
               />
             </div>
           </div>
+
+          {submitError && (
+            <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              {submitError}
+            </p>
+          )}
 
           <DialogFooter>
             <Button

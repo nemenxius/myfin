@@ -128,6 +128,12 @@ supabase db reset    # reset local DB and re-run migrations + seed
 - `supabase/.temp`, `.env*`, and `.next` are gitignored.
 - All work is committed on `main` and pushed to `origin/main`.
 
+**Bug fix — 409 on account/transaction inserts (2026-08-04):**
+- Symptom: creating an account returned `409 Conflict` on `POST /rest/v1/accounts`; the form closed silently with nothing created.
+- Root cause: `accounts.user_id`/`transactions.user_id` reference `profiles(id)`, but nothing ever created a `profiles` row (no signup trigger, no client insert). Inserts failed the FK (`23503` → PostgREST `409`).
+- Fix: `supabase/migrations/002_auto_create_profiles.sql` — backfills `profiles` for existing `auth.users` and adds an `on_auth_user_created` trigger (SECURITY DEFINER `handle_new_user()`) so new signups get a profile row automatically. **Must be applied to the remote DB** (dashboard SQL editor or `supabase db push`) — the Supabase CLI is not installed in this dev environment.
+- App hardening: `account-form.tsx` now uses `mutateAsync` and keeps the dialog open with an error banner on failure (instead of closing silently); fixed a Base UI `nativeButton` warning on the link-rendered "Create an account" button in `transaction-form.tsx`.
+
 ## 6. Agent Maintenance Guideline
 
 After completing any major task, feature, or database migration, **update the "Current Status & Recent Progress Log" section above** — add a dated entry describing what was done, note any schema/env changes, and confirm the commit. Keep this file as the single source of truth for project state so future agents can pick up where the last one left off.

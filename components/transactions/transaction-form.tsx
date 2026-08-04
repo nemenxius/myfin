@@ -145,7 +145,10 @@ export function TransactionForm({
                 Create an account before adding a transaction.
               </p>
             </div>
-            <Button render={<Link href="/dashboard/accounts" />}>
+            <Button
+              render={<Link href="/dashboard/accounts" />}
+              nativeButton={false}
+            >
               Create an account
             </Button>
           </div>
