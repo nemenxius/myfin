@@ -1,8 +1,7 @@
 "use client";
 
 import { startOfMonth, subMonths } from "date-fns";
-import { ArrowDownRight, ArrowUpRight, TrendingDown, TrendingUp, Wallet } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { useTransactions } from "@/hooks/use-transactions";
 import { formatCurrency } from "@/lib/format";
 
@@ -40,82 +39,63 @@ export function BalanceOverview() {
   const trendUp = trendPct >= 0;
 
   return (
-    <div className="space-y-6">
-      {/* Hero card */}
-      <Card className="relative overflow-hidden border-primary/10 shadow-lg">
-        <div
-          className="absolute inset-0"
-          style={{ background: "var(--brand-gradient)" }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{ background: "var(--brand-glow)" }}
-        />
-        <div
-          className="absolute inset-0 opacity-40"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 85% 15%, rgba(255,255,255,0.12), transparent 40%), radial-gradient(circle at 20% 90%, rgba(24,132,140,0.35), transparent 45%)",
-          }}
-        />
-        <CardContent className="relative p-6 sm:p-8">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium uppercase tracking-wider text-white/70">
-              Total Liquidity
+    <section className="relative overflow-hidden rounded-2xl bg-[#083458] text-white shadow-xl">
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ background: "var(--brand-glow)" }}
+      />
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/20"
+        aria-hidden
+      />
+
+      <div className="relative px-6 py-8 sm:px-10 sm:py-10">
+        <div className="flex items-center justify-between">
+          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/50">
+            Statement · Net position
+          </p>
+          <span className="text-[11px] uppercase tracking-wider text-white/40">
+            All time
+          </span>
+        </div>
+
+        <div className="mt-6 font-mono text-4xl font-medium tracking-tight text-white tabular-nums sm:text-6xl">
+          {isLoading ? "…" : formatCurrency(total)}
+        </div>
+
+        <div className="mt-8 grid grid-cols-2 gap-6 border-t border-white/10 pt-6 sm:max-w-md">
+          <div>
+            <p className="text-[11px] uppercase tracking-wider text-white/45">
+              Income
             </p>
-            <Wallet className="h-5 w-5 text-white/70" />
+            <p className="mt-1.5 font-mono text-base font-medium tabular-nums text-emerald-300 sm:text-lg">
+              {isLoading ? "…" : formatCurrency(income)}
+            </p>
           </div>
-
-          <div className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl">
-            {isLoading ? "..." : formatCurrency(total)}
+          <div>
+            <p className="text-[11px] uppercase tracking-wider text-white/45">
+              Spending
+            </p>
+            <p className="mt-1.5 font-mono text-base font-medium tabular-nums text-red-300 sm:text-lg">
+              {isLoading ? "…" : formatCurrency(expense)}
+            </p>
           </div>
+        </div>
 
-          <div className="mt-5 flex flex-wrap gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white backdrop-blur">
-              {trendUp ? (
-                <ArrowUpRight className="h-3.5 w-3.5" />
-              ) : (
-                <ArrowDownRight className="h-3.5 w-3.5" />
-              )}
-              {Math.abs(trendPct).toFixed(1)}% vs last month
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white backdrop-blur">
-              {total >= 0 ? "Net positive" : "Net negative"} overall
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Income / Expense */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-        <Card className="border-border/50 shadow-sm transition-all hover:border-primary/30 hover:shadow-md">
-          <CardContent className="flex items-center justify-between p-6">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Income</p>
-              <div className="mt-2 text-2xl font-semibold text-emerald-600">
-                {isLoading ? "..." : formatCurrency(income)}
-              </div>
-            </div>
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50">
-              <TrendingUp className="h-5 w-5 text-emerald-600" />
-            </span>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/50 shadow-sm transition-all hover:border-primary/30 hover:shadow-md">
-          <CardContent className="flex items-center justify-between p-6">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Expense</p>
-              <div className="mt-2 text-2xl font-semibold text-red-500">
-                {isLoading ? "..." : formatCurrency(expense)}
-              </div>
-            </div>
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50">
-              <TrendingDown className="h-5 w-5 text-red-500" />
-            </span>
-          </CardContent>
-        </Card>
+        <div className="mt-8 flex flex-wrap items-center gap-3">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white">
+            {trendUp ? (
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            ) : (
+              <ArrowDownRight className="h-3.5 w-3.5" />
+            )}
+            {Math.abs(trendPct).toFixed(1)}% vs last month
+          </span>
+          <span className="text-xs text-white/50">
+            {total >= 0 ? "Net positive" : "Net negative"} overall
+          </span>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }

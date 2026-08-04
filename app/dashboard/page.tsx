@@ -1,5 +1,6 @@
 import { Logo } from "@/components/brand/logo";
 import { BalanceOverview } from "@/components/dashboard/balance-overview";
+import { InsightBanner } from "@/components/dashboard/insight-banner";
 import { SpendingChart } from "@/components/dashboard/spending-chart";
 import { TransactionList } from "@/components/transactions/transaction-list";
 
@@ -18,14 +19,12 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-6xl space-y-6 px-6 py-8">
+      <div className="mx-auto max-w-6xl space-y-8 px-6 py-8">
         <div className="animate-fade-in-up">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Overview
-          </h1>
+          <BalanceOverview />
         </div>
         <div className="animate-fade-in-up" style={{ animationDelay: "60ms" }}>
-          <BalanceOverview />
+          <InsightBanner />
         </div>
         <div
           className="animate-fade-in-up"

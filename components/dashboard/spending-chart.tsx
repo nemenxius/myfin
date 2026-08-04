@@ -29,7 +29,7 @@ function CustomTooltip({
   return (
     <div className="rounded-lg border border-border/60 bg-white/90 px-3 py-2 shadow-md backdrop-blur">
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <p className="text-sm font-semibold text-foreground">
+      <p className="font-mono text-sm font-semibold tabular-nums text-foreground">
         {formatCurrency(payload[0].value)}
       </p>
     </div>
@@ -59,9 +59,11 @@ export function SpendingChart() {
   }, [transactions]);
 
   return (
-    <Card className="border-border/50 shadow-sm transition-all hover:border-primary/30 hover:shadow-md">
+    <Card className="border-border/50 bg-white shadow-sm">
       <CardHeader>
-        <CardTitle>Monthly Spending</CardTitle>
+        <CardTitle className="font-display text-xl font-medium text-ink">
+          Monthly spending
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -89,15 +91,15 @@ export function SpendingChart() {
                 dataKey="month"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 12, fill: "#64747f" }}
+                tick={{ fontSize: 12, fill: "#6c7a83" }}
                 dy={6}
               />
               <YAxis
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 12, fill: "#64747f" }}
+                tick={{ fontSize: 12, fill: "#6c7a83", fontFamily: "var(--font-mono)" }}
                 tickFormatter={(value: number) => `$${value}`}
-                width={48}
+                width={56}
               />
               <Tooltip
                 content={<CustomTooltip />}

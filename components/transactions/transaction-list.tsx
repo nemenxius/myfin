@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +55,20 @@ export function TransactionList() {
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [deleting, setDeleting] = useState<Transaction | null>(null);
 
+  const rows = useMemo(() => {
+    if (!transactions) return [];
+    const chronological = [...transactions].sort(
+      (a, b) =>
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+    let running = 0;
+    const withBalance = chronological.map((transaction) => {
+      running += transaction.amount;
+      return { ...transaction, balance: running };
+    });
+    return withBalance.reverse();
+  }, [transactions]);
+
   const openCreate = () => {
     setEditing(null);
     setFormOpen(true);
@@ -73,9 +87,16 @@ export function TransactionList() {
   };
 
   return (
-    <Card className="border-border/50 shadow-sm transition-all hover:border-primary/30 hover:shadow-md">
+    <Card className="border-border/50 bg-white shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Transactions</CardTitle>
+        <div>
+          <CardTitle className="font-display text-xl font-medium text-ink">
+            Ledger
+          </CardTitle>
+          <p className="mt-0.5 text-xs text-fog">
+            Every movement, with the balance after each line.
+          </p>
+        </div>
         <Button onClick={openCreate}>
           <Plus />
           Add Transaction
@@ -85,11 +106,15 @@ export function TransactionList() {
       <CardContent>
         {isLoading ? (
           <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-            Loading...
+            Loading…
           </div>
         ) : !transactions || transactions.length === 0 ? (
-          <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-            No transactions yet.
+          <div className="flex h-40 flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+            <p>No transactions yet.</p>
+            <Button variant="outline" size="sm" onClick={openCreate}>
+              <Plus />
+              Add your first
+            </Button>
           </div>
         ) : (
           <Table>
@@ -97,24 +122,25 @@ export function TransactionList() {
               <TableRow>
                 <TableHead>Date</TableHead>
                 <TableHead>Description</TableHead>
-                <TableHead>Type</TableHead>
+                <TableHead className="hidden sm:table-cell">Type</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
+                <TableHead className="text-right">Balance</TableHead>
                 <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {transactions.map((transaction) => (
+              {rows.map((transaction) => (
                 <TableRow
                   key={transaction.id}
                   className="transition-colors hover:bg-muted/40"
                 >
-                  <TableCell className="whitespace-nowrap text-muted-foreground">
+                  <TableCell className="whitespace-nowrap text-fog">
                     {format(new Date(transaction.date), "MMM d, yyyy")}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-ink">
                     {transaction.description ?? "Untitled"}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden sm:table-cell">
                     <Badge
                       variant="outline"
                       className={
@@ -126,14 +152,15 @@ export function TransactionList() {
                     </Badge>
                   </TableCell>
                   <TableCell
-                    className={`text-right font-medium ${
-                      transaction.amount >= 0
-                        ? "text-emerald-600"
-                        : "text-red-600"
+                    className={`text-right font-mono tabular-nums ${
+                      transaction.amount >= 0 ? "text-leaf" : "text-ember"
                     }`}
                   >
-                    {transaction.amount >= 0 ? "+" : "-"}
+                    {transaction.amount >= 0 ? "+" : "−"}
                     {formatCurrency(Math.abs(transaction.amount))}
+                  </TableCell>
+                  <TableCell className="text-right font-mono tabular-nums text-ink">
+                    {formatCurrency(transaction.balance)}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
