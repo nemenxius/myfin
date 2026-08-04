@@ -1,0 +1,254 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useAccounts } from "@/hooks/use-accounts";
+import { useCategories } from "@/hooks/use-categories";
+import { useTransactions } from "@/hooks/use-transactions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { Tables } from "@/types/database";
+
+type Transaction = Tables<"transactions">;
+type TransactionType = "income" | "expense" | "transfer";
+
+interface TransactionFormProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  transaction?: Transaction | null;
+  defaultAccountId?: string;
+}
+
+interface FormErrors {
+  amount?: string;
+  accountId?: string;
+  date?: string;
+}
+
+const today = () => new Date().toISOString().slice(0, 10);
+
+export function TransactionForm({
+  open,
+  onOpenChange,
+  transaction,
+  defaultAccountId,
+}: TransactionFormProps) {
+  const { data: accounts } = useAccounts();
+  const { data: categories } = useCategories();
+  const { addTransaction, updateTransaction } = useTransactions();
+
+  const [type, setType] = useState<TransactionType>("expense");
+  const [amount, setAmount] = useState("");
+  const [accountId, setAccountId] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [date, setDate] = useState(today);
+  const [description, setDescription] = useState("");
+  const [errors, setErrors] = useState<FormErrors>({});
+
+  useEffect(() => {
+    if (!open) return;
+    setErrors({});
+
+    if (transaction) {
+      setType(transaction.transaction_type as TransactionType);
+      setAmount(String(Math.abs(transaction.amount)));
+      setAccountId(transaction.account_id);
+      setCategoryId(transaction.category_id ?? "");
+      setDate(new Date(transaction.date).toISOString().slice(0, 10));
+      setDescription(transaction.description ?? "");
+    } else {
+      setType("expense");
+      setAmount("");
+      setAccountId(defaultAccountId ?? "");
+      setCategoryId("");
+      setDate(today());
+      setDescription("");
+    }
+  }, [open, transaction, defaultAccountId]);
+
+  const validate = (): boolean => {
+    const next: FormErrors = {};
+    const numericAmount = Number(amount);
+
+    if (!amount || Number.isNaN(numericAmount) || numericAmount <= 0) {
+      next.amount = "Amount must be a number greater than 0.";
+    }
+    if (!accountId) {
+      next.accountId = "Please select an account.";
+    }
+    if (!date) {
+      next.date = "Please select a date.";
+    }
+
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!validate()) return;
+
+    const signedAmount =
+      type === "expense" ? -Math.abs(Number(amount)) : Math.abs(Number(amount));
+
+    const payload = {
+      account_id: accountId,
+      category_id: categoryId || null,
+      amount: signedAmount,
+      transaction_type: type,
+      date: new Date(date).toISOString(),
+      description: description || null,
+    };
+
+    if (transaction) {
+      updateTransaction.mutate({ id: transaction.id, ...payload });
+    } else {
+      addTransaction.mutate(payload);
+    }
+
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>
+            {transaction ? "Edit Transaction" : "Add Transaction"}
+          </DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-1.5">
+              <Label htmlFor="type">Type</Label>
+              <Select value={type} onValueChange={(value) => setType(value as TransactionType)}>
+                <SelectTrigger id="type" className="w-full">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="expense">Expense</SelectItem>
+                  <SelectItem value="income">Income</SelectItem>
+                  <SelectItem value="transfer">Transfer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-1.5">
+              <Label htmlFor="amount">Amount</Label>
+              <Input
+                id="amount"
+                type="number"
+                inputMode="decimal"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                aria-invalid={!!errors.amount}
+              />
+              {errors.amount && (
+                <p className="text-xs text-destructive">{errors.amount}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid gap-1.5">
+            <Label htmlFor="account">Account</Label>
+            <Select
+              value={accountId}
+              onValueChange={(value) => value !== null && setAccountId(value)}
+            >
+              <SelectTrigger id="account" className="w-full" aria-invalid={!!errors.accountId}>
+                <SelectValue placeholder="Select account" />
+              </SelectTrigger>
+              <SelectContent>
+                {(accounts ?? []).map((account) => (
+                  <SelectItem key={account.id} value={account.id}>
+                    {account.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.accountId && (
+              <p className="text-xs text-destructive">{errors.accountId}</p>
+            )}
+          </div>
+
+          <div className="grid gap-1.5">
+            <Label htmlFor="category">Category</Label>
+            <Select
+              value={categoryId}
+              onValueChange={(value) => value !== null && setCategoryId(value)}
+            >
+              <SelectTrigger id="category" className="w-full">
+                <SelectValue placeholder="Select category (optional)" />
+              </SelectTrigger>
+              <SelectContent>
+                {(categories ?? []).map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-1.5">
+              <Label htmlFor="date">Date</Label>
+              <Input
+                id="date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                aria-invalid={!!errors.date}
+              />
+              {errors.date && (
+                <p className="text-xs text-destructive">{errors.date}</p>
+              )}
+            </div>
+
+            <div className="grid gap-1.5">
+              <Label htmlFor="description">Description</Label>
+              <Input
+                id="description"
+                type="text"
+                placeholder="Notes or payee"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit">
+              {transaction ? "Save Changes" : "Add Transaction"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

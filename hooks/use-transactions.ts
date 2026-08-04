@@ -4,6 +4,7 @@ import type { Tables, TablesInsert } from "@/types/database";
 
 type Transaction = Tables<"transactions">;
 type TransactionInsert = TablesInsert<"transactions">;
+type TransactionInput = Omit<TransactionInsert, "user_id">;
 
 const queryKey = ["transactions"] as const;
 
@@ -17,6 +18,14 @@ const fetchTransactions = async (): Promise<Transaction[]> => {
   return data;
 };
 
+const getCurrentUserId = async (): Promise<string> => {
+  const {
+    data: { user },
+  } = await supabaseClient.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+  return user.id;
+};
+
 export function useTransactions() {
   const queryClient = useQueryClient();
 
@@ -26,10 +35,11 @@ export function useTransactions() {
   });
 
   const addTransaction = useMutation({
-    mutationFn: async (input: TransactionInsert): Promise<Transaction> => {
+    mutationFn: async (input: TransactionInput): Promise<Transaction> => {
+      const user_id = await getCurrentUserId();
       const { data, error } = await supabaseClient
         .from("transactions")
-        .insert(input)
+        .insert({ ...input, user_id })
         .select()
         .single();
 
@@ -40,10 +50,11 @@ export function useTransactions() {
       await queryClient.cancelQueries({ queryKey });
 
       const previous = queryClient.getQueryData<Transaction[]>(queryKey);
+      const user_id = await getCurrentUserId();
 
       const optimistic: Transaction = {
         id: `temp-${Date.now()}`,
-        user_id: newTransaction.user_id,
+        user_id,
         account_id: newTransaction.account_id,
         category_id: newTransaction.category_id ?? null,
         amount: newTransaction.amount,
@@ -60,6 +71,42 @@ export function useTransactions() {
       return { previous };
     },
     onError: (_error, _newTransaction, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(queryKey, context.previous);
+      }
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey }),
+  });
+
+  const updateTransaction = useMutation({
+    mutationFn: async ({
+      id,
+      ...updates
+    }: { id: string } & Partial<TransactionInsert>): Promise<Transaction> => {
+      const { data, error } = await supabaseClient
+        .from("transactions")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onMutate: async ({ id, ...updates }) => {
+      await queryClient.cancelQueries({ queryKey });
+
+      const previous = queryClient.getQueryData<Transaction[]>(queryKey);
+
+      queryClient.setQueryData<Transaction[]>(queryKey, (old) =>
+        (old ?? []).map((transaction) =>
+          transaction.id === id ? { ...transaction, ...updates } : transaction
+        )
+      );
+
+      return { previous };
+    },
+    onError: (_error, _updates, context) => {
       if (context?.previous) {
         queryClient.setQueryData(queryKey, context.previous);
       }
@@ -98,6 +145,7 @@ export function useTransactions() {
   return {
     ...transactionsQuery,
     addTransaction,
+    updateTransaction,
     deleteTransaction,
   };
 }
