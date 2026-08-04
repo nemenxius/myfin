@@ -1,0 +1,197 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useAccounts } from "@/hooks/use-accounts";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ACCOUNT_TYPES, type AccountType } from "./account-types";
+import type { Tables } from "@/types/database";
+
+type Account = Tables<"accounts">;
+
+interface AccountFormProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  account?: Account | null;
+}
+
+interface FormErrors {
+  name?: string;
+  initialBalance?: string;
+}
+
+export function AccountForm({
+  open,
+  onOpenChange,
+  account,
+}: AccountFormProps) {
+  const { createAccount, updateAccount } = useAccounts();
+
+  const [name, setName] = useState("");
+  const [type, setType] = useState<AccountType>("checking");
+  const [initialBalance, setInitialBalance] = useState("0");
+  const [currency, setCurrency] = useState("USD");
+  const [errors, setErrors] = useState<FormErrors>({});
+
+  useEffect(() => {
+    if (!open) return;
+    setErrors({});
+
+    if (account) {
+      setName(account.name);
+      setType(account.account_type as AccountType);
+      setInitialBalance(String(account.initial_balance));
+      setCurrency(account.currency);
+    } else {
+      setName("");
+      setType("checking");
+      setInitialBalance("0");
+      setCurrency("USD");
+    }
+  }, [open, account]);
+
+  const validate = (): boolean => {
+    const next: FormErrors = {};
+    const numericBalance = Number(initialBalance);
+
+    if (!name.trim()) {
+      next.name = "Please enter an account name.";
+    }
+    if (initialBalance !== "" && Number.isNaN(numericBalance)) {
+      next.initialBalance = "Balance must be a number.";
+    }
+
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!validate()) return;
+
+    const payload = {
+      name: name.trim(),
+      account_type: type,
+      initial_balance: Number(initialBalance) || 0,
+      currency: currency.trim() || "USD",
+    };
+
+    if (account) {
+      updateAccount.mutate({ id: account.id, ...payload });
+    } else {
+      createAccount.mutate(payload);
+    }
+
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>
+            {account ? "Edit Account" : "Add Account"}
+          </DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
+          <div className="grid gap-1.5">
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              type="text"
+              placeholder="Main Checking"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              aria-invalid={!!errors.name}
+            />
+            {errors.name && (
+              <p className="text-xs text-destructive">{errors.name}</p>
+            )}
+          </div>
+
+          <div className="grid gap-1.5">
+            <Label htmlFor="type">Type</Label>
+            <Select
+              value={type}
+              onValueChange={(value) =>
+                value !== null && setType(value as AccountType)
+              }
+            >
+              <SelectTrigger id="type" className="w-full">
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                {ACCOUNT_TYPES.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-1.5">
+              <Label htmlFor="initial-balance">Starting balance</Label>
+              <Input
+                id="initial-balance"
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                placeholder="0.00"
+                value={initialBalance}
+                onChange={(e) => setInitialBalance(e.target.value)}
+                aria-invalid={!!errors.initialBalance}
+              />
+              {errors.initialBalance && (
+                <p className="text-xs text-destructive">
+                  {errors.initialBalance}
+                </p>
+              )}
+            </div>
+
+            <div className="grid gap-1.5">
+              <Label htmlFor="currency">Currency</Label>
+              <Input
+                id="currency"
+                type="text"
+                placeholder="USD"
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value.toUpperCase())}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit">
+              {account ? "Save Changes" : "Add Account"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

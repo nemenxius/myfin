@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useAccounts } from "@/hooks/use-accounts";
 import { useCategories } from "@/hooks/use-categories";
 import { useTransactions } from "@/hooks/use-transactions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Landmark } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -47,7 +49,7 @@ export function TransactionForm({
   transaction,
   defaultAccountId,
 }: TransactionFormProps) {
-  const { data: accounts } = useAccounts();
+  const { data: accounts, isLoading: accountsLoading } = useAccounts();
   const { data: categories } = useCategories();
   const { addTransaction, updateTransaction } = useTransactions();
 
@@ -132,6 +134,22 @@ export function TransactionForm({
           </DialogTitle>
         </DialogHeader>
 
+        {!accountsLoading && accounts && accounts.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 py-6 text-center">
+            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#18848c]/10">
+              <Landmark className="h-6 w-6 text-[#18848c]" />
+            </span>
+            <div>
+              <p className="text-sm font-medium text-ink">No accounts yet</p>
+              <p className="mt-1 text-sm text-fog">
+                Create an account before adding a transaction.
+              </p>
+            </div>
+            <Button render={<Link href="/dashboard/accounts" />}>
+              Create an account
+            </Button>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-1.5">
@@ -248,6 +266,7 @@ export function TransactionForm({
             </Button>
           </DialogFooter>
         </form>
+        )}
       </DialogContent>
     </Dialog>
   );

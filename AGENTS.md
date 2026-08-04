@@ -21,13 +21,16 @@ MyFin is a personal finance tracker (expense tracker) built as a Next.js web app
 app/
   (auth)/login/       # Login page
   dashboard/          # Dashboard page (statement band, insight banner, chart, ledger)
+  dashboard/layout.tsx # Shared dashboard shell (header + nav)
+  dashboard/accounts/ # Accounts management page
   layout.tsx          # Root layout — loads brand fonts (Public Sans, Newsreader, IBM Plex Mono)
   globals.css         # Tailwind v4 theme tokens, brand palette, animations, utilities
   providers.tsx       # TanStack Query provider wrapper
   page.tsx            # Landing page
 components/
+  accounts/           # account-form, account-list, account-types
   brand/              # Logo (SVG wallet mark)
-  dashboard/          # balance-overview, insight-banner, spending-chart
+  dashboard/          # header, balance-overview, insight-banner, spending-chart
   landing/            # header, hero, hero-visual, waitlist-form
   transactions/       # transaction-list (ledger), transaction-form
   ui/                 # Shadcn/Base UI primitives (card, table, button, dialog, etc.)
@@ -118,6 +121,7 @@ supabase db reset    # reset local DB and re-run migrations + seed
 - Landing page (`components/landing/`) with waitlist form and brand SVG logo.
 - Full transaction management (create/edit/delete) with AlertDialog delete confirmation and dropdown row actions.
 - Brand-aligned dashboard visual overhaul, then the current statement-style redesign (commit `0b4d679`).
+- **Account Management (2026-08-04):** full CRUD for accounts. `hooks/use-accounts.ts` now exposes `createAccount`/`updateAccount`/`deleteAccount` (all optimistic with rollback + `invalidateQueries`; `createAccount` resolves `user_id` internally). New `components/accounts/` — `account-form.tsx` (create/edit dialog: name, type, starting balance, currency), `account-list.tsx` (calculated balances = `initial_balance` + Σ transactions, delete AlertDialog warns when linked transactions will cascade), `account-types.ts` (shared type→label map; DB values `checking`/`savings`/`cash`/`brokerage`). Shared `components/dashboard/header.tsx` (Overview/Accounts nav + global "Add Account" button) hosted by new `app/dashboard/layout.tsx`; new route `app/dashboard/accounts/page.tsx`. Transaction form shows an empty-state prompting to create an account when none exist.
 
 **Environment & migrations notes:**
 - `.env.local` is in a working state with the real Supabase URL and publishable key.
