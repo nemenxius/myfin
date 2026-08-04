@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type ComponentProps } from "react";
 import { startOfMonth, subMonths } from "date-fns";
 import {
   Landmark,
@@ -70,7 +70,7 @@ export function StatCards() {
       ? ((stats.monthExpense - stats.prevExpense) / stats.prevExpense) * 100
       : 0;
 
-  const cards = [
+  const cards: ComponentProps<typeof StatCard>[] = [
     {
       label: "Net position",
       value: formatCurrency(stats.net),
