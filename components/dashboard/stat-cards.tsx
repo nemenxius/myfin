@@ -48,8 +48,15 @@ export function StatCards() {
     }
     const monthNet = monthIncome - monthExpense;
 
+    const accountTotals = new Map<string, number>();
+    for (const t of all) {
+      accountTotals.set(
+        t.account_id,
+        (accountTotals.get(t.account_id) ?? 0) + t.amount
+      );
+    }
     const totalBalance = (accounts ?? []).reduce(
-      (s, a) => s + a.initial_balance,
+      (s, a) => s + a.initial_balance + (accountTotals.get(a.id) ?? 0),
       0
     );
 
@@ -76,7 +83,7 @@ export function StatCards() {
       value: formatCurrency(stats.net),
       icon: Wallet,
       delta: stats.net >= 0 ? "Net positive" : "Net negative",
-      deltaTone: stats.net >= 0 ? "positive" : "negative" as const,
+      deltaTone: stats.net >= 0 ? "positive" : "negative",
     },
     {
       label: "Savings rate",
@@ -88,20 +95,28 @@ export function StatCards() {
       label: "Income · this month",
       value: formatCurrency(stats.monthIncome),
       icon: TrendingUp,
-      deltaTone: "positive" as const,
+      deltaTone: "positive",
     },
     {
       label: "Spending · this month",
       value: formatCurrency(stats.monthExpense),
       icon: TrendingDown,
-      delta: `${Math.abs(spendDelta).toFixed(1)}% vs last month`,
-      deltaTone: spendDelta <= 0 ? "positive" : "negative" as const,
+      delta:
+        stats.prevExpense > 0
+          ? `${Math.abs(spendDelta).toFixed(1)}% vs last month`
+          : "No spending last month",
+      deltaTone:
+        stats.prevExpense > 0
+          ? spendDelta <= 0
+            ? "positive"
+            : "negative"
+          : "neutral",
     },
     {
       label: "This month's net",
       value: formatCurrency(stats.monthNet),
       icon: PiggyBank,
-      deltaTone: stats.monthNet >= 0 ? "positive" : "negative" as const,
+      deltaTone: stats.monthNet >= 0 ? "positive" : "negative",
     },
     {
       label: "Accounts",

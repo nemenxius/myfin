@@ -49,6 +49,7 @@ export function SidePanel() {
       totals.set(t.account_id, (totals.get(t.account_id) ?? 0) + t.amount);
     }
     const accountRows = (accounts ?? []).map((a) => ({
+      id: a.id,
       name: a.name,
       balance: a.initial_balance + (totals.get(a.id) ?? 0),
     }));
@@ -92,7 +93,9 @@ export function SidePanel() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {byCategory.length === 0 ? (
+          {isLoading ? (
+            <p className="text-sm text-fog">…</p>
+          ) : byCategory.length === 0 ? (
             <p className="text-sm text-fog">No spending this month.</p>
           ) : (
             <div className="flex items-center gap-4">
@@ -146,13 +149,15 @@ export function SidePanel() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {accountRows.length === 0 ? (
+          {isLoading ? (
+            <p className="text-sm text-fog">…</p>
+          ) : accountRows.length === 0 ? (
             <p className="text-sm text-fog">No accounts yet.</p>
           ) : (
             <ul className="space-y-2">
               {accountRows.map((account) => (
                 <li
-                  key={account.name}
+                  key={account.id}
                   className="flex items-center justify-between text-sm"
                 >
                   <span className="text-ink">{account.name}</span>
