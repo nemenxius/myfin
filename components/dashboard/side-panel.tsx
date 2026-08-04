@@ -1,0 +1,170 @@
+"use client";
+
+import { useMemo } from "react";
+import { startOfMonth, subMonths } from "date-fns";
+import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAccounts } from "@/hooks/use-accounts";
+import { useCategories } from "@/hooks/use-categories";
+import { useTransactions } from "@/hooks/use-transactions";
+import { formatCurrency } from "@/lib/format";
+
+const DONUT_COLORS = ["#083458", "#18848c", "#0e7c5b", "#c0392b", "#2a9d9f", "#4a6a7d"];
+
+export function SidePanel() {
+  const { data: transactions, isLoading } = useTransactions();
+  const { data: accounts } = useAccounts();
+  const { data: categories } = useCategories();
+
+  const { monthSpend, prevSpend, byCategory, accountRows } = useMemo(() => {
+    const all = transactions ?? [];
+    const now = new Date();
+    const currentStart = startOfMonth(now).getTime();
+    const prevStart = startOfMonth(subMonths(now, 1)).getTime();
+
+    let monthSpend = 0;
+    let prevSpend = 0;
+    const catTotals = new Map<string, number>();
+    for (const t of all) {
+      if (t.amount >= 0) continue;
+      const ts = new Date(t.date).getTime();
+      const abs = Math.abs(t.amount);
+      if (ts >= currentStart) {
+        monthSpend += abs;
+        if (t.category_id) {
+          catTotals.set(t.category_id, (catTotals.get(t.category_id) ?? 0) + abs);
+        }
+      } else if (ts >= prevStart) {
+        prevSpend += abs;
+      }
+    }
+
+    const catName = new Map((categories ?? []).map((c) => [c.id, c.name]));
+    const byCategory = [...catTotals.entries()]
+      .map(([id, amount]) => ({ id, name: catName.get(id) ?? "Uncategorized", amount }))
+      .sort((a, b) => b.amount - a.amount);
+
+    const totals = new Map<string, number>();
+    for (const t of all) {
+      totals.set(t.account_id, (totals.get(t.account_id) ?? 0) + t.amount);
+    }
+    const accountRows = (accounts ?? []).map((a) => ({
+      name: a.name,
+      balance: a.initial_balance + (totals.get(a.id) ?? 0),
+    }));
+
+    return { monthSpend, prevSpend, byCategory, accountRows };
+  }, [transactions, accounts, categories]);
+
+  const spendPct =
+    prevSpend > 0 ? Math.min(100, (monthSpend / prevSpend) * 100) : 0;
+
+  return (
+    <div className="flex flex-col gap-4">
+      <Card className="border-border/50 bg-white shadow-sm">
+        <CardHeader>
+          <CardTitle className="font-display text-base font-medium text-ink">
+            Spending this month
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="font-mono text-2xl font-medium tabular-nums text-ember">
+            {isLoading ? "…" : formatCurrency(monthSpend)}
+          </p>
+          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-[#18848c]"
+              style={{ width: `${spendPct}%` }}
+            />
+          </div>
+          <p className="mt-2 text-xs text-fog">
+            {prevSpend > 0
+              ? `${spendPct.toFixed(0)}% of last month's spending`
+              : "No spending last month"}
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/50 bg-white shadow-sm">
+        <CardHeader>
+          <CardTitle className="font-display text-base font-medium text-ink">
+            By category
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {byCategory.length === 0 ? (
+            <p className="text-sm text-fog">No spending this month.</p>
+          ) : (
+            <div className="flex items-center gap-4">
+              <div className="h-28 w-28 shrink-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={byCategory}
+                      dataKey="amount"
+                      nameKey="name"
+                      innerRadius={34}
+                      outerRadius={52}
+                      paddingAngle={2}
+                      strokeWidth={0}
+                    >
+                      {byCategory.map((entry, i) => (
+                        <Cell
+                          key={entry.id}
+                          fill={DONUT_COLORS[i % DONUT_COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <ul className="flex-1 space-y-2">
+                {byCategory.slice(0, 3).map((entry, i) => (
+                  <li key={entry.id} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="flex items-center gap-2 text-ink">
+                      <span
+                        className="h-2 w-2 rounded-full"
+                        style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }}
+                      />
+                      {entry.name}
+                    </span>
+                    <span className="font-mono tabular-nums text-fog">
+                      {formatCurrency(entry.amount)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/50 bg-white shadow-sm">
+        <CardHeader>
+          <CardTitle className="font-display text-base font-medium text-ink">
+            Accounts
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {accountRows.length === 0 ? (
+            <p className="text-sm text-fog">No accounts yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {accountRows.map((account) => (
+                <li
+                  key={account.name}
+                  className="flex items-center justify-between text-sm"
+                >
+                  <span className="text-ink">{account.name}</span>
+                  <span className="font-mono tabular-nums text-ink">
+                    {formatCurrency(account.balance)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
