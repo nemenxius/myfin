@@ -59,9 +59,9 @@ export function SpendingChart() {
   }, [transactions]);
 
   return (
-    <Card className="border-border/50 bg-white shadow-sm">
+    <Card className="h-full border-border/50 bg-white shadow-sm">
       <CardHeader>
-        <CardTitle className="font-display text-xl font-medium text-ink">
+        <CardTitle className="font-display text-base font-medium text-ink">
           Monthly spending
         </CardTitle>
       </CardHeader>
