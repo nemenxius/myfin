@@ -73,7 +73,7 @@ export function TransactionList() {
   };
 
   return (
-    <Card>
+    <Card className="border-border/50 shadow-sm transition-all hover:border-primary/30 hover:shadow-md">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Transactions</CardTitle>
         <Button onClick={openCreate}>
@@ -104,7 +104,10 @@ export function TransactionList() {
             </TableHeader>
             <TableBody>
               {transactions.map((transaction) => (
-                <TableRow key={transaction.id}>
+                <TableRow
+                  key={transaction.id}
+                  className="transition-colors hover:bg-muted/40"
+                >
                   <TableCell className="whitespace-nowrap text-muted-foreground">
                     {format(new Date(transaction.date), "MMM d, yyyy")}
                   </TableCell>

@@ -11,14 +11,30 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTransactions } from "@/hooks/use-transactions";
 import { formatCurrency } from "@/lib/format";
+
+function CustomTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: Array<{ value: number }>;
+  label?: string;
+}) {
+  if (!active || !payload || payload.length === 0) return null;
+
+  return (
+    <div className="rounded-lg border border-border/60 bg-white/90 px-3 py-2 shadow-md backdrop-blur">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <p className="text-sm font-semibold text-foreground">
+        {formatCurrency(payload[0].value)}
+      </p>
+    </div>
+  );
+}
 
 export function SpendingChart() {
   const { data: transactions, isLoading } = useTransactions();
@@ -33,10 +49,7 @@ export function SpendingChart() {
     for (const transaction of transactions ?? []) {
       if (transaction.amount >= 0) continue;
       const key = format(new Date(transaction.date), "yyyy-MM");
-      byMonth.set(
-        key,
-        (byMonth.get(key) ?? 0) + Math.abs(transaction.amount)
-      );
+      byMonth.set(key, (byMonth.get(key) ?? 0) + Math.abs(transaction.amount));
     }
 
     return months.map((month) => ({
@@ -46,7 +59,7 @@ export function SpendingChart() {
   }, [transactions]);
 
   return (
-    <Card>
+    <Card className="border-border/50 shadow-sm transition-all hover:border-primary/30 hover:shadow-md">
       <CardHeader>
         <CardTitle>Monthly Spending</CardTitle>
       </CardHeader>
@@ -56,38 +69,47 @@ export function SpendingChart() {
             Loading...
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={256}>
-            <AreaChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+          <ResponsiveContainer width="100%" height={264}>
+            <AreaChart
+              data={data}
+              margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+            >
               <defs>
                 <linearGradient id="spendingFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                  <stop offset="0%" stopColor="#18848c" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="#083458" stopOpacity={0.03} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke="#e6eaee"
+              />
               <XAxis
                 dataKey="month"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 12, fill: "#64747f" }}
+                dy={6}
               />
               <YAxis
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 12, fill: "#64747f" }}
                 tickFormatter={(value: number) => `$${value}`}
                 width={48}
               />
               <Tooltip
-                formatter={(value) => formatCurrency(Number(value))}
-                labelStyle={{ fontWeight: 600 }}
+                content={<CustomTooltip />}
+                cursor={{ stroke: "#18848c", strokeDasharray: "4 4" }}
               />
               <Area
                 type="monotone"
                 dataKey="amount"
-                stroke="hsl(var(--primary))"
+                stroke="#083458"
+                strokeWidth={2.5}
                 fill="url(#spendingFill)"
-                strokeWidth={2}
+                activeDot={{ r: 5, fill: "#18848c", strokeWidth: 0 }}
               />
             </AreaChart>
           </ResponsiveContainer>
