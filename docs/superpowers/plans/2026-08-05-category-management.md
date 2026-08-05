@@ -4,7 +4,7 @@
 
 **Goal:** Add a "Categories" card to the settings page where users can create, edit, and delete their own custom transaction categories (with a Lucide icon picker), while seeded global categories stay read-only.
 
-**Architecture:** Extend `useCategories` from read-only to optimistic CRUD (mirroring `useAccounts`), scoped by two new RLS policies (UPDATE/DELETE on own rows) in migration `004`. New `components/categories/` hold the icon constants (`category-icons.ts`), the add/edit Dialog (`category-form.tsx`), and the grouped list with per-row actions + delete confirmation (`category-list.tsx`). The settings page hosts the new card between Password and Sign out.
+**Architecture:** Extend `useCategories` from read-only to optimistic CRUD (mirroring `useAccounts`), scoped by two new RLS policies (UPDATE/DELETE on own rows) in migration `004`. New `components/categories/` hold the icon constants (`category-icons.tsx`), the add/edit Dialog (`category-form.tsx`), and the grouped list with per-row actions + delete confirmation (`category-list.tsx`). The settings page hosts the new card between Password and Sign out.
 
 **Tech Stack:** Next.js 16 App Router, React 19, TanStack Query v5, Supabase JS client, Base UI `Dialog`/`AlertDialog`/`DropdownMenu`, Lucide React, date-fns (unused here), Vitest (existing suite must stay green).
 
@@ -224,7 +224,7 @@ git commit -m "feat: category CRUD hooks and RLS migration"
 ### Task 2: Category icon constants
 
 **Files:**
-- Create: `components/categories/category-icons.ts`
+- Create: `components/categories/category-icons.tsx`
 
 **Interfaces:**
 - Produces:
@@ -232,7 +232,7 @@ git commit -m "feat: category CRUD hooks and RLS migration"
   - `CategoryIcon({ slug, className }: { slug: string; className?: string })` — renders the mapped Lucide icon, falling back to `Tag` for unknown slugs.
 - Consumes: nothing.
 
-- [ ] **Step 1: Create `components/categories/category-icons.ts`**
+- [ ] **Step 1: Create `components/categories/category-icons.tsx`**
 
 ```ts
 import {
@@ -338,7 +338,7 @@ Expected: BUILD SUCCESSFUL. (File is not imported anywhere yet — this confirms
 - [ ] **Step 3: Commit**
 
 ```bash
-git add components/categories/category-icons.ts
+git add components/categories/category-icons.tsx
 git commit -m "feat: add category icon constants and renderer"
 ```
 
@@ -779,7 +779,7 @@ In `AGENTS.md`, under `## 5. Current Status & Recent Progress Log`, append a dat
 ```markdown
 **Category management in settings (2026-08-05):**
 - New "Categories" card on `/dashboard/settings` — users can create, edit, and delete their own custom transaction categories via a Dialog with a Lucide icon picker; seeded global categories are read-only.
-- `useCategories` extended from read-only to optimistic CRUD (`createCategory`/`updateCategory`/`deleteCategory`, mirrors `useAccounts`). New `components/categories/`: `category-icons.ts` (CATEGORY_ICONS + CategoryIcon renderer with Tag fallback), `category-form.tsx` (Dialog), `category-list.tsx` (grouped list + AlertDialog delete). Icons are stored but not yet rendered in the transaction form / side panel (future change).
+- `useCategories` extended from read-only to optimistic CRUD (`createCategory`/`updateCategory`/`deleteCategory`, mirrors `useAccounts`). New `components/categories/`: `category-icons.tsx` (CATEGORY_ICONS + CategoryIcon renderer with Tag fallback), `category-form.tsx` (Dialog), `category-list.tsx` (grouped list + AlertDialog delete). Icons are stored but not yet rendered in the transaction form / side panel (future change).
 - **Schema change:** migration `004_category_manage.sql` (UPDATE + DELETE policies for own categories). **Must be applied to the remote DB** (dashboard SQL editor) — same as migrations 002/003.
 - **Settings roadmap (not yet built):** dark mode/theme, default account for new transactions, CSV export, display name, week/month-start preferences, MFA/session management, delete account. Icons in transaction dropdown + side panel donut.
 - Commit: feature commits on top of `b2fa6a4`.
