@@ -147,6 +147,8 @@ supabase db reset    # reset local DB and re-run migrations + seed
 - New `components/accounts/account-currencies.ts`: `CURRENCIES` (`{ value, label }[]`, same pattern as `ACCOUNT_TYPES`); the account form's currency field is now a Select dropdown.
 - Aggregate displays use the primary currency: stat-cards, spending-chart, transaction-list ledger, and side-panel monthly totals + category donut.
 - Per-account displays use each account's own currency: account-list balances and side-panel account balances.
+- **Multi-currency aggregates (decision):** aggregate totals (ledger running balance, Combined balance, account-list total) sum raw `amount` values across accounts regardless of currency and label them in the primary currency. This assumes a single-currency-per-user reality; there is **no FX conversion**. Per-currency ledgers / FX conversion are a future feature, not a bug to fix silently.
+- **Robustness (decision):** `lib/format.ts` validates currency codes (`/^[A-Za-z]{3}$/`) and wraps `Intl.NumberFormat` in a `try/catch` — invalid/garbage `accounts.currency` values (legacy free-text rows) fall back to `"USD"` instead of throwing a `RangeError` that would crash the dashboard render. Unknown-but-well-formed 3-letter codes render as literals.
 - No schema or env changes.
 
 ## 6. Agent Maintenance Guideline
