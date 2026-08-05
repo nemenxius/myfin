@@ -8,6 +8,7 @@ const tx = (id: string, date: string, amount: number) => ({
   user_id: "u1",
   account_id: "a1",
   category_id: null,
+  to_account_id: null,
   description: null,
   transaction_type: "expense",
   created_at: date,

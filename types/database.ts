@@ -104,7 +104,7 @@ export type Database = {
           date: string
           description: string | null
           id: string
-          to_account_id?: string | null
+          to_account_id: string | null
           transaction_type: string
           user_id: string
         }

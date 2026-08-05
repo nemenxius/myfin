@@ -52,16 +52,17 @@ export function useTransactions() {
       const previous = queryClient.getQueryData<Transaction[]>(queryKey);
       const user_id = await getCurrentUserId();
 
-      const optimistic: Transaction = {
-        id: `temp-${Date.now()}`,
-        user_id,
-        account_id: newTransaction.account_id,
-        category_id: newTransaction.category_id ?? null,
-        amount: newTransaction.amount,
-        transaction_type: newTransaction.transaction_type,
-        date: newTransaction.date ?? new Date().toISOString(),
-        description: newTransaction.description ?? null,
-      };
+       const optimistic: Transaction = {
+         id: `temp-${Date.now()}`,
+         user_id,
+         account_id: newTransaction.account_id,
+         category_id: newTransaction.category_id ?? null,
+         to_account_id: null,
+         amount: newTransaction.amount,
+         transaction_type: newTransaction.transaction_type,
+         date: newTransaction.date ?? new Date().toISOString(),
+         description: newTransaction.description ?? null,
+       };
 
       queryClient.setQueryData<Transaction[]>(queryKey, (old) => [
         optimistic,
