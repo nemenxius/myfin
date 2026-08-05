@@ -186,10 +186,16 @@ supabase db reset    # reset local DB and re-run migrations + seed
 
 **Category management in settings (2026-08-05):**
 - New "Categories" card on `/dashboard/settings` — users can create, edit, and delete their own custom transaction categories via a Dialog with a Lucide icon picker; seeded global categories are read-only.
-- `useCategories` extended from read-only to optimistic CRUD (`createCategory`/`updateCategory`/`deleteCategory`, mirrors `useAccounts`). New `components/categories/`: `category-icons.tsx` (CATEGORY_ICONS + CategoryIcon renderer with Tag fallback), `category-form.tsx` (Dialog), `category-list.tsx` (grouped list + AlertDialog delete). Icons are stored but not yet rendered in the transaction form / side panel (future change).
+- `useCategories` extended from read-only to optimistic CRUD (`createCategory`/`updateCategory`/`deleteCategory`, mirrors `useAccounts`). New `components/categories/`: `category-icons.tsx` (CATEGORY_ICONS + CategoryIcon renderer with Tag fallback), `category-form.tsx` (Dialog), `category-list.tsx` (grouped list + AlertDialog delete). Icons are rendered in the side-panel by-category list and the transaction-form category dropdown (see the next entry).
 - **Schema change:** migration `004_category_manage.sql` (UPDATE + DELETE policies for own categories). **Must be applied to the remote DB** (dashboard SQL editor) — same as migrations 002/003.
-- **Settings roadmap (not yet built):** dark mode/theme, default account for new transactions, CSV export, display name, week/month-start preferences, MFA/session management, delete account. Icons in transaction dropdown + side panel donut.
+- **Settings roadmap (not yet built):** dark mode/theme, default account for new transactions, CSV export, display name, week/month-start preferences, MFA/session management, delete account.
 - Commit: feature commits on top of `b2fa6a4`.
+
+**Category icons in dashboard (2026-08-05):**
+- The side-panel "By category" list now renders each category's Lucide icon (from `categories.icon`) tinted to the donut slice color, replacing the plain colored dot; Uncategorized falls back to the Tag icon.
+- The transaction form's category dropdown shows fog-colored icons next to category names in both the open list and the closed trigger (via Base UI `SelectValue`'s function-child formatter).
+- Pure presentation change — no schema, no env, no data-layer changes, no new dependencies. Spec: `docs/superpowers/specs/2026-08-05-category-icons-dashboard-design.md`.
+- Commit: feature commits on top of `6a92015`.
 
 ## 6. Agent Maintenance Guideline
 
