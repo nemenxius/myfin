@@ -66,7 +66,6 @@ export function StatCards() {
       monthIncome,
       monthExpense,
       monthNet,
-      accountCount: (accounts ?? []).length,
       totalBalance,
       prevExpense,
     };
@@ -119,10 +118,9 @@ export function StatCards() {
       deltaTone: stats.monthNet >= 0 ? "positive" : "negative",
     },
     {
-      label: "Accounts",
-      value: `${stats.accountCount} · ${formatCurrency(stats.totalBalance)}`,
+      label: "Combined balance",
+      value: formatCurrency(stats.totalBalance),
       icon: Landmark,
-      delta: "combined balance",
     },
   ];
 
