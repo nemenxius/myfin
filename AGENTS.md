@@ -28,20 +28,21 @@ app/
   providers.tsx       # TanStack Query provider wrapper
   page.tsx            # Landing page
 components/
-  accounts/           # account-form, account-list, account-types
+  accounts/           # account-currencies, account-form, account-list, account-types
   brand/              # Logo (SVG wallet mark)
   dashboard/          # header, stat-card, stat-cards, side-panel, spending-chart
   landing/            # header, hero, hero-visual, waitlist-form
   transactions/       # transaction-list (ledger), transaction-form
   ui/                 # Shadcn/Base UI primitives (card, table, button, dialog, etc.)
 hooks/
-  use-transactions.ts # CRUD + optimistic mutations for transactions
-  use-accounts.ts     # CRUD for accounts
-  use-categories.ts   # Read-only categories query
+  use-transactions.ts   # CRUD + optimistic mutations for transactions
+  use-accounts.ts       # CRUD for accounts
+  use-categories.ts     # Read-only categories query
+  use-primary-currency.ts # First account's currency (USD fallback) for aggregate displays
 lib/
   supabase/client.ts  # Browser Supabase client (createBrowserClient)
   supabase/server.ts  # Server Supabase client (createServerClient, cookie-based)
-  format.ts           # formatCurrency (Intl.NumberFormat, USD)
+  format.ts           # formatCurrency(amount, currency) + getCurrencySymbol (Intl.NumberFormat)
   utils.ts            # cn() helper
 types/
   database.ts         # Generated Supabase types (Tables<T> / TablesInsert<T>)
@@ -139,6 +140,14 @@ supabase db reset    # reset local DB and re-run migrations + seed
 - Root cause: `accounts.user_id`/`transactions.user_id` reference `profiles(id)`, but nothing ever created a `profiles` row (no signup trigger, no client insert). Inserts failed the FK (`23503` → PostgREST `409`).
 - Fix: `supabase/migrations/002_auto_create_profiles.sql` — backfills `profiles` for existing `auth.users` and adds an `on_auth_user_created` trigger (SECURITY DEFINER `handle_new_user()`) so new signups get a profile row automatically. **Must be applied to the remote DB** (dashboard SQL editor or `supabase db push`) — the Supabase CLI is not installed in this dev environment.
 - App hardening: `account-form.tsx` now uses `mutateAsync` and keeps the dialog open with an error banner on failure (instead of closing silently); fixed a Base UI `nativeButton` warning on the link-rendered "Create an account" button in `transaction-form.tsx`.
+
+**Currency handling (2026-08-04):**
+- `lib/format.ts`: `formatCurrency(amount, currency = "USD")` is now currency-aware (via `Intl.NumberFormat`); added `getCurrencySymbol(currency = "USD")`.
+- New `hooks/use-primary-currency.ts`: returns `{ currency, isLoading, isError }` — the first account's currency, `"USD"` fallback when there are no accounts. Used by all aggregate displays.
+- New `components/accounts/account-currencies.ts`: `CURRENCIES` (`{ value, label }[]`, same pattern as `ACCOUNT_TYPES`); the account form's currency field is now a Select dropdown.
+- Aggregate displays use the primary currency: stat-cards, spending-chart, transaction-list ledger, and side-panel monthly totals + category donut.
+- Per-account displays use each account's own currency: account-list balances and side-panel account balances.
+- No schema or env changes.
 
 ## 6. Agent Maintenance Guideline
 
