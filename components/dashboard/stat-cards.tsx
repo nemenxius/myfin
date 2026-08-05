@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, type ComponentProps } from "react";
-import { startOfMonth, subMonths } from "date-fns";
+import { startOfMonth } from "date-fns";
 import {
   Landmark,
   PiggyBank,
@@ -32,18 +32,14 @@ export function StatCards() {
 
     const now = new Date();
     const currentStart = startOfMonth(now).getTime();
-    const prevStart = startOfMonth(subMonths(now, 1)).getTime();
 
     let monthIncome = 0;
     let monthExpense = 0;
-    let prevExpense = 0;
     for (const t of all) {
       const ts = new Date(t.date).getTime();
       if (ts >= currentStart) {
         if (t.amount > 0) monthIncome += t.amount;
         else monthExpense += Math.abs(t.amount);
-      } else if (ts >= prevStart && t.amount < 0) {
-        prevExpense += Math.abs(t.amount);
       }
     }
     const monthNet = monthIncome - monthExpense;
@@ -67,14 +63,8 @@ export function StatCards() {
       monthExpense,
       monthNet,
       totalBalance,
-      prevExpense,
     };
   }, [transactions, accounts]);
-
-  const spendDelta =
-    stats.prevExpense > 0
-      ? ((stats.monthExpense - stats.prevExpense) / stats.prevExpense) * 100
-      : 0;
 
   const cards: ComponentProps<typeof StatCard>[] = [
     {
@@ -91,25 +81,18 @@ export function StatCards() {
       delta: "of income saved",
     },
     {
-      label: "Income · this month",
+      label: "Income",
       value: formatCurrency(stats.monthIncome),
       icon: TrendingUp,
-      deltaTone: "positive",
+      delta: "This month",
+      deltaTone: "neutral",
     },
     {
-      label: "Spending · this month",
+      label: "Spending",
       value: formatCurrency(stats.monthExpense),
       icon: TrendingDown,
-      delta:
-        stats.prevExpense > 0
-          ? `${Math.abs(spendDelta).toFixed(1)}% vs last month`
-          : "No spending last month",
-      deltaTone:
-        stats.prevExpense > 0
-          ? spendDelta <= 0
-            ? "positive"
-            : "negative"
-          : "neutral",
+      delta: "This month",
+      deltaTone: "neutral",
     },
     {
       label: "This month's net",
