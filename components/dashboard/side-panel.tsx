@@ -9,6 +9,7 @@ import { usePrimaryCurrency } from "@/hooks/use-primary-currency";
 import { useCategories } from "@/hooks/use-categories";
 import { useTransactions } from "@/hooks/use-transactions";
 import { formatCurrency } from "@/lib/format";
+import { CategoryIcon } from "@/components/categories/category-icons";
 
 const DONUT_COLORS = ["#083458", "#18848c", "#0e7c5b", "#c0392b", "#2a9d9f", "#4a6a7d"];
 
@@ -42,8 +43,14 @@ export function SidePanel() {
     }
 
     const catName = new Map((categories ?? []).map((c) => [c.id, c.name]));
+    const catIcon = new Map((categories ?? []).map((c) => [c.id, c.icon]));
     const byCategory = [...catTotals.entries()]
-      .map(([id, amount]) => ({ id, name: catName.get(id) ?? "Uncategorized", amount }))
+      .map(([id, amount]) => ({
+        id,
+        name: catName.get(id) ?? "Uncategorized",
+        icon: catIcon.get(id) ?? null,
+        amount,
+      }))
       .sort((a, b) => b.amount - a.amount);
 
     const totals = new Map<string, number>();
@@ -128,10 +135,9 @@ export function SidePanel() {
                 {byCategory.slice(0, 3).map((entry, i) => (
                   <li key={entry.id} className="flex items-center justify-between gap-2 text-sm">
                     <span className="flex items-center gap-2 text-ink">
-                      <span
-                        className="h-2 w-2 rounded-full"
-                        style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }}
-                      />
+                      <span style={{ color: DONUT_COLORS[i % DONUT_COLORS.length] }}>
+                        <CategoryIcon slug={entry.icon ?? "Tag"} className="h-4 w-4" />
+                      </span>
                       {entry.name}
                     </span>
                     <span className="font-mono tabular-nums text-fog">
