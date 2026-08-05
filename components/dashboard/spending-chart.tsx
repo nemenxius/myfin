@@ -13,16 +13,19 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTransactions } from "@/hooks/use-transactions";
-import { formatCurrency } from "@/lib/format";
+import { usePrimaryCurrency } from "@/hooks/use-primary-currency";
+import { formatCurrency, getCurrencySymbol } from "@/lib/format";
 
 function CustomTooltip({
   active,
   payload,
   label,
+  currency,
 }: {
   active?: boolean;
   payload?: Array<{ value: number }>;
   label?: string;
+  currency: string;
 }) {
   if (!active || !payload || payload.length === 0) return null;
 
@@ -30,7 +33,7 @@ function CustomTooltip({
     <div className="rounded-lg border border-border/60 bg-white/90 px-3 py-2 shadow-md backdrop-blur">
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <p className="font-mono text-sm font-semibold tabular-nums text-foreground">
-        {formatCurrency(payload[0].value)}
+        {formatCurrency(payload[0].value, currency)}
       </p>
     </div>
   );
@@ -38,6 +41,7 @@ function CustomTooltip({
 
 export function SpendingChart() {
   const { data: transactions, isLoading } = useTransactions();
+  const { currency } = usePrimaryCurrency();
 
   const data = useMemo(() => {
     const now = new Date();
@@ -98,11 +102,13 @@ export function SpendingChart() {
                 tickLine={false}
                 axisLine={false}
                 tick={{ fontSize: 12, fill: "#6c7a83", fontFamily: "var(--font-mono)" }}
-                tickFormatter={(value: number) => `$${value}`}
+                tickFormatter={(value: number) =>
+                  `${getCurrencySymbol(currency)}${value}`
+                }
                 width={56}
               />
               <Tooltip
-                content={<CustomTooltip />}
+                content={<CustomTooltip currency={currency} />}
                 cursor={{ stroke: "#18848c", strokeDasharray: "4 4" }}
               />
               <Area

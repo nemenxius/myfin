@@ -11,6 +11,7 @@ import {
   Percent,
 } from "lucide-react";
 import { useAccounts } from "@/hooks/use-accounts";
+import { usePrimaryCurrency } from "@/hooks/use-primary-currency";
 import { useTransactions } from "@/hooks/use-transactions";
 import { formatCurrency } from "@/lib/format";
 import { StatCard } from "./stat-card";
@@ -18,6 +19,7 @@ import { StatCard } from "./stat-card";
 export function StatCards() {
   const { data: transactions, isLoading } = useTransactions();
   const { data: accounts } = useAccounts();
+  const { currency } = usePrimaryCurrency();
 
   const stats = useMemo(() => {
     const all = transactions ?? [];
@@ -69,7 +71,7 @@ export function StatCards() {
   const cards: ComponentProps<typeof StatCard>[] = [
     {
       label: "Net position",
-      value: formatCurrency(stats.net),
+      value: formatCurrency(stats.net, currency),
       icon: Wallet,
       delta: stats.net >= 0 ? "Net positive" : "Net negative",
       deltaTone: stats.net >= 0 ? "positive" : "negative",
@@ -82,27 +84,27 @@ export function StatCards() {
     },
     {
       label: "Income",
-      value: formatCurrency(stats.monthIncome),
+      value: formatCurrency(stats.monthIncome, currency),
       icon: TrendingUp,
       delta: "This month",
       deltaTone: "neutral",
     },
     {
       label: "Spending",
-      value: formatCurrency(stats.monthExpense),
+      value: formatCurrency(stats.monthExpense, currency),
       icon: TrendingDown,
       delta: "This month",
       deltaTone: "neutral",
     },
     {
       label: "This month's net",
-      value: formatCurrency(stats.monthNet),
+      value: formatCurrency(stats.monthNet, currency),
       icon: PiggyBank,
       deltaTone: stats.monthNet >= 0 ? "positive" : "negative",
     },
     {
       label: "Combined balance",
-      value: formatCurrency(stats.totalBalance),
+      value: formatCurrency(stats.totalBalance, currency),
       icon: Landmark,
     },
   ];

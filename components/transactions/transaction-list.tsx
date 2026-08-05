@@ -36,6 +36,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useTransactions } from "@/hooks/use-transactions";
+import { usePrimaryCurrency } from "@/hooks/use-primary-currency";
 import { formatCurrency } from "@/lib/format";
 import { TransactionForm } from "./transaction-form";
 import type { Tables } from "@/types/database";
@@ -50,6 +51,7 @@ const typeStyles: Record<string, string> = {
 
 export function TransactionList() {
   const { data: transactions, isLoading, deleteTransaction } = useTransactions();
+  const { currency } = usePrimaryCurrency();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
@@ -157,10 +159,10 @@ export function TransactionList() {
                     }`}
                   >
                     {transaction.amount >= 0 ? "+" : "−"}
-                    {formatCurrency(Math.abs(transaction.amount))}
+                    {formatCurrency(Math.abs(transaction.amount), currency)}
                   </TableCell>
                   <TableCell className="text-right font-mono tabular-nums text-ink">
-                    {formatCurrency(transaction.balance)}
+                    {formatCurrency(transaction.balance, currency)}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
