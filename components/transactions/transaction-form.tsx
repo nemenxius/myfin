@@ -33,6 +33,7 @@ interface TransactionFormProps {
   onOpenChange: (open: boolean) => void;
   transaction?: Transaction | null;
   defaultAccountId?: string;
+  defaultDate?: string;
 }
 
 interface FormErrors {
@@ -48,6 +49,7 @@ export function TransactionForm({
   onOpenChange,
   transaction,
   defaultAccountId,
+  defaultDate,
 }: TransactionFormProps) {
   const { data: accounts, isLoading: accountsLoading } = useAccounts();
   const { data: categories } = useCategories();
@@ -77,10 +79,10 @@ export function TransactionForm({
       setAmount("");
       setAccountId(defaultAccountId ?? "");
       setCategoryId("");
-      setDate(today());
+      setDate(defaultDate ?? today());
       setDescription("");
     }
-  }, [open, transaction, defaultAccountId]);
+  }, [open, transaction, defaultAccountId, defaultDate]);
 
   const validate = (): boolean => {
     const next: FormErrors = {};
