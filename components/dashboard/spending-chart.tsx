@@ -69,13 +69,14 @@ export function SpendingChart() {
           Monthly spending
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex min-h-0 flex-1 flex-col">
         {isLoading ? (
           <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
             Loading...
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={264}>
+          <div className="min-h-0 w-full flex-1">
+            <ResponsiveContainer width="100%" height="100%">
             <AreaChart
               data={data}
               margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
@@ -120,7 +121,8 @@ export function SpendingChart() {
                 activeDot={{ r: 5, fill: "#18848c", strokeWidth: 0 }}
               />
             </AreaChart>
-          </ResponsiveContainer>
+            </ResponsiveContainer>
+          </div>
         )}
       </CardContent>
     </Card>
