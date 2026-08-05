@@ -30,11 +30,15 @@ export function useProfile() {
   const updateDisplayCurrency = useMutation({
     mutationFn: async (currency: string) => {
       if (!userId) throw new Error("Not authenticated");
-      const { error } = await supabaseClient
+      const { data, error } = await supabaseClient
         .from("profiles")
         .update({ display_currency: currency })
-        .eq("id", userId);
+        .eq("id", userId)
+        .select("id");
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("Profile not found");
+      }
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["profile", userId] });

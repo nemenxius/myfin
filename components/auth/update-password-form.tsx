@@ -20,6 +20,7 @@ export function UpdatePasswordForm({
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(true);
 
   useEffect(() => {
     const verify = async () => {
@@ -28,6 +29,7 @@ export function UpdatePasswordForm({
         type: type as "recovery",
       });
       if (error) setError("This reset link is invalid or has expired.");
+      setVerifying(false);
     };
     void verify();
   }, [tokenHash, type]);
@@ -98,8 +100,8 @@ export function UpdatePasswordForm({
               {message}
             </p>
           )}
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Updating…" : "Update password"}
+          <Button type="submit" className="w-full" disabled={loading || verifying}>
+            {verifying ? "Verifying…" : loading ? "Updating…" : "Update password"}
           </Button>
         </form>
       </div>

@@ -85,7 +85,6 @@ export function AuthForm({
       setError("Passwords do not match.");
       return;
     }
-    setPendingDisplayCurrency(currency);
     setLoading(true);
     const { error } = await supabaseClient.auth.signUp({ email, password });
     setLoading(false);
@@ -93,6 +92,7 @@ export function AuthForm({
       setError(error.message);
       return;
     }
+    setPendingDisplayCurrency(currency);
     setPendingVerification(true);
   };
 
