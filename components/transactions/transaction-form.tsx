@@ -26,7 +26,7 @@ import {
 import type { Tables } from "@/types/database";
 
 type Transaction = Tables<"transactions">;
-type TransactionType = "income" | "expense" | "transfer";
+type TransactionType = "Income" | "Expense" | "Transfer";
 
 interface TransactionFormProps {
   open: boolean;
@@ -53,7 +53,7 @@ export function TransactionForm({
   const { data: categories } = useCategories();
   const { addTransaction, updateTransaction } = useTransactions();
 
-  const [type, setType] = useState<TransactionType>("expense");
+  const [type, setType] = useState<TransactionType>("Expense");
   const [amount, setAmount] = useState("");
   const [accountId, setAccountId] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -73,7 +73,7 @@ export function TransactionForm({
       setDate(new Date(transaction.date).toISOString().slice(0, 10));
       setDescription(transaction.description ?? "");
     } else {
-      setType("expense");
+      setType("Expense");
       setAmount("");
       setAccountId(defaultAccountId ?? "");
       setCategoryId("");
@@ -105,7 +105,7 @@ export function TransactionForm({
     if (!validate()) return;
 
     const signedAmount =
-      type === "expense" ? -Math.abs(Number(amount)) : Math.abs(Number(amount));
+      type === "Expense" ? -Math.abs(Number(amount)) : Math.abs(Number(amount));
 
     const payload = {
       account_id: accountId,
@@ -162,9 +162,9 @@ export function TransactionForm({
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="expense">Expense</SelectItem>
-                  <SelectItem value="income">Income</SelectItem>
-                  <SelectItem value="transfer">Transfer</SelectItem>
+                  <SelectItem value="Expense">Expense</SelectItem>
+                  <SelectItem value="Income">Income</SelectItem>
+                  <SelectItem value="Transfer">Transfer</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -193,6 +193,10 @@ export function TransactionForm({
             <Select
               value={accountId}
               onValueChange={(value) => value !== null && setAccountId(value)}
+              items={(accounts ?? []).map((account) => ({
+                value: account.id,
+                label: account.name,
+              }))}
             >
               <SelectTrigger id="account" className="w-full" aria-invalid={!!errors.accountId}>
                 <SelectValue placeholder="Select account" />
@@ -215,6 +219,10 @@ export function TransactionForm({
             <Select
               value={categoryId}
               onValueChange={(value) => value !== null && setCategoryId(value)}
+              items={(categories ?? []).map((category) => ({
+                value: category.id,
+                label: category.name,
+              }))}
             >
               <SelectTrigger id="category" className="w-full">
                 <SelectValue placeholder="Select category (optional)" />

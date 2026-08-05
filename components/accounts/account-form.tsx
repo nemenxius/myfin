@@ -143,6 +143,10 @@ export function AccountForm({
               onValueChange={(value) =>
                 value !== null && setType(value as AccountType)
               }
+              items={ACCOUNT_TYPES.map((option) => ({
+                value: option.value,
+                label: option.label,
+              }))}
             >
               <SelectTrigger id="type" className="w-full">
                 <SelectValue placeholder="Select type" />
