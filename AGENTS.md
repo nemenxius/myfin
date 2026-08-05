@@ -172,6 +172,12 @@ supabase db reset    # reset local DB and re-run migrations + seed
 - `/auth/callback` validates the `next` param (same-origin path starting with a single `/`) before redirecting.
 - Deferred: Next 16.3 deprecates `middleware.ts` in favor of `proxy.ts` (warning only; auth-critical file — migrate as a separate task).
 
+**Month-scoped ledger & stat cards (2026-08-05):**
+- Dashboard accepts `?month=YYYY-MM`; `lib/month.ts` (`parseMonthParam`, `monthWindow`, `monthLabel`) + `components/dashboard/month-selector.tsx` (chevrons + Today, `router.replace` so the back button isn't flooded).
+- Income/Spending/Net/Savings-rate cards follow the month; Net position + Combined balance stay global. Ledger filters to the month with carried-forward seed balances; month-aware subtitle/empty states. Transaction form defaults new dates to the selected month (today if current). Chart + side panel unchanged.
+- **No schema or env changes**; no data-layer changes (client-side filter over the `["transactions"]` cache).
+- Commit: `86dd32c` (plan) → feature commits through `15de129`.
+
 ## 6. Agent Maintenance Guideline
 
 After completing any major task, feature, or database migration, **update the "Current Status & Recent Progress Log" section above** — add a dated entry describing what was done, note any schema/env changes, and confirm the commit. Keep this file as the single source of truth for project state so future agents can pick up where the last one left off.
