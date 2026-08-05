@@ -55,7 +55,21 @@ export function SidePanel() {
 
     const totals = new Map<string, number>();
     for (const t of all) {
-      totals.set(t.account_id, (totals.get(t.account_id) ?? 0) + t.amount);
+      if (t.transaction_type === "Transfer" && t.to_account_id) {
+        totals.set(
+          t.account_id,
+          (totals.get(t.account_id) ?? 0) - t.amount
+        );
+        totals.set(
+          t.to_account_id,
+          (totals.get(t.to_account_id) ?? 0) + t.amount
+        );
+      } else {
+        totals.set(
+          t.account_id,
+          (totals.get(t.account_id) ?? 0) + t.amount
+        );
+      }
     }
     const accountRows = (accounts ?? []).map((a) => ({
       id: a.id,

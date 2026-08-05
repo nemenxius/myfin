@@ -9,3 +9,12 @@ FOR INSERT WITH CHECK (
     WHERE accounts.id = to_account_id AND accounts.user_id = auth.uid()
   )
 );
+
+CREATE POLICY "Transactions must reference own to_account" ON transactions
+FOR UPDATE WITH CHECK (
+  to_account_id IS NULL
+  OR EXISTS (
+    SELECT 1 FROM accounts
+    WHERE accounts.id = to_account_id AND accounts.user_id = auth.uid()
+  )
+);

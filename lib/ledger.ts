@@ -17,6 +17,7 @@ export function buildLedger(
   for (const t of transactions) {
     const ts = new Date(t.date).getTime();
     if (ts < startTs) {
+      if (t.transaction_type === "Transfer") continue;
       seed += t.amount;
     } else if (ts < endTs) {
       inMonth.push(t);
@@ -28,7 +29,9 @@ export function buildLedger(
   );
   let running = seed;
   const withBalance = chronological.map((t) => {
-    running += t.amount;
+    if (t.transaction_type !== "Transfer") {
+      running += t.amount;
+    }
     return { ...t, balance: running };
   });
   return withBalance.reverse();

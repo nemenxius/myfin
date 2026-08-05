@@ -49,10 +49,21 @@ export function StatCards({ month }: { month: string }) {
 
     const accountTotals = new Map<string, number>();
     for (const t of all) {
-      accountTotals.set(
-        t.account_id,
-        (accountTotals.get(t.account_id) ?? 0) + t.amount
-      );
+      if (t.transaction_type === "Transfer" && t.to_account_id) {
+        accountTotals.set(
+          t.account_id,
+          (accountTotals.get(t.account_id) ?? 0) - t.amount
+        );
+        accountTotals.set(
+          t.to_account_id,
+          (accountTotals.get(t.to_account_id) ?? 0) + t.amount
+        );
+      } else {
+        accountTotals.set(
+          t.account_id,
+          (accountTotals.get(t.account_id) ?? 0) + t.amount
+        );
+      }
     }
     const totalBalance = (accounts ?? []).reduce(
       (s, a) => s + a.initial_balance + (accountTotals.get(a.id) ?? 0),

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Plus, Trash2, ArrowLeftRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +37,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useTransactions } from "@/hooks/use-transactions";
 import { usePrimaryCurrency } from "@/hooks/use-primary-currency";
+import { useCategories } from "@/hooks/use-categories";
+import { useAccounts } from "@/hooks/use-accounts";
+import { CategoryIcon } from "@/components/categories/category-icons";
 import { formatCurrency } from "@/lib/format";
 import { monthLabel, monthWindow } from "@/lib/month";
 import { buildLedger } from "@/lib/ledger";
@@ -52,9 +55,27 @@ const typeStyles: Record<string, string> = {
 };
 
 export function TransactionList({ month }: { month: string }) {
-  const { data: transactions, isLoading, deleteTransaction } = useTransactions();
-  const { currency } = usePrimaryCurrency();
-  const monthName = monthLabel(month);
+   const { data: transactions, isLoading, deleteTransaction } = useTransactions();
+   const { currency } = usePrimaryCurrency();
+   const { data: categories } = useCategories();
+   const { data: accounts } = useAccounts();
+   const monthName = monthLabel(month);
+
+   const categoryMap = useMemo(() => {
+     const map = new Map<string, { name: string; icon: string }>();
+     for (const c of categories ?? []) {
+       map.set(c.id, { name: c.name, icon: c.icon });
+     }
+     return map;
+   }, [categories]);
+
+   const accountMap = useMemo(() => {
+     const map = new Map<string, string>();
+     for (const a of accounts ?? []) {
+       map.set(a.id, a.name);
+     }
+     return map;
+   }, [accounts]);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
@@ -134,6 +155,7 @@ export function TransactionList({ month }: { month: string }) {
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
+                <TableHead>Category</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead className="hidden sm:table-cell">Type</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
@@ -150,6 +172,30 @@ export function TransactionList({ month }: { month: string }) {
                   <TableCell className="whitespace-nowrap text-fog">
                     {format(new Date(transaction.date), "MMM d, yyyy")}
                   </TableCell>
+                   <TableCell className="text-ink">
+                      {transaction.transaction_type === "Transfer" &&
+                      transaction.to_account_id ? (
+                        <span className="flex items-center gap-1.5">
+                          <CategoryIcon slug="ArrowLeftRight" className="h-4 w-4" />
+                          {accountMap.get(transaction.to_account_id) ??
+                            transaction.to_account_id}
+                        </span>
+                      ) : transaction.category_id ? (
+                        <span className="flex items-center gap-1.5">
+                          <CategoryIcon
+                            slug={
+                              categoryMap.get(transaction.category_id)?.icon ??
+                              "Tag"
+                            }
+                            className="h-4 w-4"
+                          />
+                          {categoryMap.get(transaction.category_id)?.name ??
+                            transaction.category_id}
+                        </span>
+                      ) : (
+                        "Untitled"
+                      )}
+                    </TableCell>
                   <TableCell className="text-ink">
                     {transaction.description ?? "Untitled"}
                   </TableCell>
