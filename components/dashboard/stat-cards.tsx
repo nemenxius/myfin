@@ -40,8 +40,8 @@ export function StatCards({ month }: { month: string }) {
     for (const t of all) {
       const ts = new Date(t.date).getTime();
       if (ts >= startTs && ts < endTs) {
-if (t.amount > 0 && t.transaction_type !== "Transfer") monthIncome += t.amount;
-         else if (t.transaction_type !== "Transfer") monthExpense += Math.abs(t.amount);
+        if (t.amount > 0 && t.transaction_type !== "Transfer") monthIncome += t.amount;
+        else if (t.transaction_type !== "Transfer") monthExpense += Math.abs(t.amount);
       }
     }
     const monthNet = monthIncome - monthExpense;
