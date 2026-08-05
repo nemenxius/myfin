@@ -105,7 +105,7 @@ NEXT_PUBLIC_SUPABASE_URL=<project URL>
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<publishable key>
 ```
 
-> Note: the browser/server clients use the **publishable key** (`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`), not the legacy anon key. The service-role key must never be exposed to the browser. Placeholder/invalid values cause a 500 on `/login` (`Invalid supabaseUrl`), so use valid-shaped values when building.
+> Note: the browser/server clients use the **publishable key** (`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`), not the legacy anon key. The service-role key must never be exposed to the browser. Placeholder/invalid values cause a 500 on `/auth` (`Invalid supabaseUrl`), so use valid-shaped values when building.
 
 **Database migrations:**
 
