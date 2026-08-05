@@ -5,6 +5,7 @@ import { startOfMonth, subMonths } from "date-fns";
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAccounts } from "@/hooks/use-accounts";
+import { usePrimaryCurrency } from "@/hooks/use-primary-currency";
 import { useCategories } from "@/hooks/use-categories";
 import { useTransactions } from "@/hooks/use-transactions";
 import { formatCurrency } from "@/lib/format";
@@ -15,6 +16,7 @@ export function SidePanel() {
   const { data: transactions, isLoading } = useTransactions();
   const { data: accounts } = useAccounts();
   const { data: categories } = useCategories();
+  const { currency } = usePrimaryCurrency();
 
   const { monthSpend, prevSpend, byCategory, accountRows } = useMemo(() => {
     const all = transactions ?? [];
@@ -51,6 +53,7 @@ export function SidePanel() {
     const accountRows = (accounts ?? []).map((a) => ({
       id: a.id,
       name: a.name,
+      currency: a.currency,
       balance: a.initial_balance + (totals.get(a.id) ?? 0),
     }));
 
@@ -70,7 +73,7 @@ export function SidePanel() {
         </CardHeader>
         <CardContent>
           <p className="font-mono text-2xl font-medium tabular-nums text-ember">
-            {isLoading ? "…" : formatCurrency(monthSpend)}
+            {isLoading ? "…" : formatCurrency(monthSpend, currency)}
           </p>
           <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
             <div
@@ -132,7 +135,7 @@ export function SidePanel() {
                       {entry.name}
                     </span>
                     <span className="font-mono tabular-nums text-fog">
-                      {formatCurrency(entry.amount)}
+                      {formatCurrency(entry.amount, currency)}
                     </span>
                   </li>
                 ))}
@@ -162,7 +165,7 @@ export function SidePanel() {
                 >
                   <span className="text-ink">{account.name}</span>
                   <span className="font-mono tabular-nums text-ink">
-                    {formatCurrency(account.balance)}
+                    {formatCurrency(account.balance, account.currency)}
                   </span>
                 </li>
               ))}
