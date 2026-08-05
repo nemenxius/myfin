@@ -24,10 +24,10 @@ export function StatCards({ month }: { month: string }) {
   const stats = useMemo(() => {
     const all = transactions ?? [];
     const income = all
-      .filter((t) => t.amount > 0)
+      .filter((t) => t.amount > 0 && t.transaction_type !== "Transfer")
       .reduce((s, t) => s + t.amount, 0);
     const expense = all
-      .filter((t) => t.amount < 0)
+      .filter((t) => t.amount < 0 && t.transaction_type !== "Transfer")
       .reduce((s, t) => s + Math.abs(t.amount), 0);
     const net = income - expense;
 
@@ -40,8 +40,8 @@ export function StatCards({ month }: { month: string }) {
     for (const t of all) {
       const ts = new Date(t.date).getTime();
       if (ts >= startTs && ts < endTs) {
-        if (t.amount > 0) monthIncome += t.amount;
-        else monthExpense += Math.abs(t.amount);
+if (t.amount > 0 && t.transaction_type !== "Transfer") monthIncome += t.amount;
+         else if (t.transaction_type !== "Transfer") monthExpense += Math.abs(t.amount);
       }
     }
     const monthNet = monthIncome - monthExpense;
