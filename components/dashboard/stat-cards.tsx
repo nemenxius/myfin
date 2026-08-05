@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, type ComponentProps } from "react";
-import { startOfMonth } from "date-fns";
 import {
   Landmark,
   PiggyBank,
@@ -14,9 +13,10 @@ import { useAccounts } from "@/hooks/use-accounts";
 import { usePrimaryCurrency } from "@/hooks/use-primary-currency";
 import { useTransactions } from "@/hooks/use-transactions";
 import { formatCurrency } from "@/lib/format";
+import { monthLabel, monthWindow } from "@/lib/month";
 import { StatCard } from "./stat-card";
 
-export function StatCards() {
+export function StatCards({ month }: { month: string }) {
   const { data: transactions, isLoading } = useTransactions();
   const { data: accounts } = useAccounts();
   const { currency } = usePrimaryCurrency();
@@ -30,21 +30,22 @@ export function StatCards() {
       .filter((t) => t.amount < 0)
       .reduce((s, t) => s + Math.abs(t.amount), 0);
     const net = income - expense;
-    const savingsRate = income > 0 ? (net / income) * 100 : 0;
 
-    const now = new Date();
-    const currentStart = startOfMonth(now).getTime();
+    const { start, end } = monthWindow(month);
+    const startTs = start.getTime();
+    const endTs = end.getTime();
 
     let monthIncome = 0;
     let monthExpense = 0;
     for (const t of all) {
       const ts = new Date(t.date).getTime();
-      if (ts >= currentStart) {
+      if (ts >= startTs && ts < endTs) {
         if (t.amount > 0) monthIncome += t.amount;
         else monthExpense += Math.abs(t.amount);
       }
     }
     const monthNet = monthIncome - monthExpense;
+    const savingsRate = monthIncome > 0 ? (monthNet / monthIncome) * 100 : 0;
 
     const accountTotals = new Map<string, number>();
     for (const t of all) {
@@ -66,7 +67,9 @@ export function StatCards() {
       monthNet,
       totalBalance,
     };
-  }, [transactions, accounts]);
+  }, [transactions, accounts, month]);
+
+  const monthName = monthLabel(month);
 
   const cards: ComponentProps<typeof StatCard>[] = [
     {
@@ -80,26 +83,27 @@ export function StatCards() {
       label: "Savings rate",
       value: `${stats.savingsRate.toFixed(1)}%`,
       icon: Percent,
-      delta: "of income saved",
+      delta: monthName,
     },
     {
       label: "Income",
       value: formatCurrency(stats.monthIncome, currency),
       icon: TrendingUp,
-      delta: "This month",
+      delta: monthName,
       deltaTone: "neutral",
     },
     {
       label: "Spending",
       value: formatCurrency(stats.monthExpense, currency),
       icon: TrendingDown,
-      delta: "This month",
+      delta: monthName,
       deltaTone: "neutral",
     },
     {
-      label: "This month's net",
+      label: "Net",
       value: formatCurrency(stats.monthNet, currency),
       icon: PiggyBank,
+      delta: monthName,
       deltaTone: stats.monthNet >= 0 ? "positive" : "negative",
     },
     {
