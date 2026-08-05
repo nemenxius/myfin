@@ -1,0 +1,93 @@
+import {
+  Banknote,
+  Briefcase,
+  Car,
+  Coffee,
+  Droplets,
+  Dumbbell,
+  Film,
+  Gift,
+  GraduationCap,
+  HeartPulse,
+  Home,
+  Phone,
+  PiggyBank,
+  Plane,
+  Salad,
+  Shirt,
+  ShoppingCart,
+  Sparkles,
+  Stethoscope,
+  Tag,
+  TrendingUp,
+  Utensils,
+  Wallet,
+  Wifi,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
+
+export const CATEGORY_ICONS: { value: string; label: string }[] = [
+  { value: "Utensils", label: "Food" },
+  { value: "ShoppingCart", label: "Shopping" },
+  { value: "Home", label: "Home" },
+  { value: "Car", label: "Car" },
+  { value: "Coffee", label: "Coffee" },
+  { value: "Zap", label: "Utilities" },
+  { value: "Banknote", label: "Money" },
+  { value: "TrendingUp", label: "Income" },
+  { value: "Plane", label: "Travel" },
+  { value: "Gift", label: "Gift" },
+  { value: "HeartPulse", label: "Health" },
+  { value: "Briefcase", label: "Work" },
+  { value: "GraduationCap", label: "Education" },
+  { value: "Film", label: "Entertainment" },
+  { value: "Shirt", label: "Clothing" },
+  { value: "PiggyBank", label: "Savings" },
+  { value: "Wallet", label: "Wallet" },
+  { value: "Phone", label: "Phone" },
+  { value: "Wifi", label: "Internet" },
+  { value: "Droplets", label: "Water" },
+  { value: "Stethoscope", label: "Medical" },
+  { value: "Dumbbell", label: "Fitness" },
+  { value: "Salad", label: "Groceries" },
+  { value: "Sparkles", label: "Misc" },
+];
+
+const categoryIconMap: Record<string, LucideIcon> = {
+  Utensils,
+  ShoppingCart,
+  Home,
+  Car,
+  Coffee,
+  Zap,
+  Banknote,
+  TrendingUp,
+  Plane,
+  Gift,
+  HeartPulse,
+  Briefcase,
+  GraduationCap,
+  Film,
+  Shirt,
+  PiggyBank,
+  Wallet,
+  Phone,
+  Wifi,
+  Droplets,
+  Stethoscope,
+  Dumbbell,
+  Salad,
+  Sparkles,
+};
+
+export function CategoryIcon({
+  slug,
+  className,
+}: {
+  slug: string;
+  className?: string;
+}) {
+  const Icon = categoryIconMap[slug] ?? Tag;
+  return <Icon className={className} />;
+}
