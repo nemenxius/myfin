@@ -12,6 +12,7 @@ import { formatCurrency } from "@/lib/format";
 import { CategoryIcon } from "@/components/categories/category-icons";
 
 const DONUT_COLORS = ["#083458", "#18848c", "#0e7c5b", "#c0392b", "#2a9d9f", "#4a6a7d"];
+const UNCATEGORIZED_CATEGORY_ID = "__myfin_uncategorized__";
 
 export function SidePanel() {
   const { data: transactions, isLoading } = useTransactions();
@@ -34,9 +35,8 @@ export function SidePanel() {
       const abs = Math.abs(t.amount);
       if (ts >= currentStart) {
         monthSpend += abs;
-        if (t.category_id) {
-          catTotals.set(t.category_id, (catTotals.get(t.category_id) ?? 0) + abs);
-        }
+        const categoryId = t.category_id ?? UNCATEGORIZED_CATEGORY_ID;
+        catTotals.set(categoryId, (catTotals.get(categoryId) ?? 0) + abs);
       } else if (ts >= prevStart) {
         prevSpend += abs;
       }
