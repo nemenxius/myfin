@@ -30,7 +30,6 @@ export function SidePanel() {
     let prevSpend = 0;
     const catTotals = new Map<string, number>();
     for (const t of all) {
-      if (t.transaction_type === "Transfer") continue;
       if (t.amount >= 0) continue;
       const ts = new Date(t.date).getTime();
       const abs = Math.abs(t.amount);

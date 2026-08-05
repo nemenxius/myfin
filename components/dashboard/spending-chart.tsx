@@ -52,7 +52,6 @@ export function SpendingChart() {
     const byMonth = new Map<string, number>();
     for (const transaction of transactions ?? []) {
       if (transaction.amount >= 0) continue;
-      if (transaction.transaction_type === "Transfer") continue;
       const key = format(new Date(transaction.date), "yyyy-MM");
       byMonth.set(key, (byMonth.get(key) ?? 0) + Math.abs(transaction.amount));
     }
