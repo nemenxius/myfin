@@ -24,6 +24,9 @@ const ibmPlexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "MyFin",
   description: "Personal finance tracker",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
