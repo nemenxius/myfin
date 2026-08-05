@@ -172,11 +172,11 @@ export function TransactionList({ month }: { month: string }) {
                   <TableCell className="whitespace-nowrap text-fog">
                     {format(new Date(transaction.date), "MMM d, yyyy")}
                   </TableCell>
-                   <TableCell className="text-ink">
+                    <TableCell className="text-ink">
                       {transaction.transaction_type === "Transfer" &&
                       transaction.to_account_id ? (
                         <span className="flex items-center gap-1.5">
-                          <CategoryIcon slug="ArrowLeftRight" className="h-4 w-4" />
+                          <ArrowLeftRight className="h-4 w-4" />
                           {accountMap.get(transaction.to_account_id) ??
                             transaction.to_account_id}
                         </span>

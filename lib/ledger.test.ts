@@ -38,4 +38,16 @@ describe("buildLedger", () => {
   it("handles an empty month", () => {
     expect(buildLedger(transactions, "2027-01")).toEqual([]);
   });
+
+  it("excludes transfers from the running balance", () => {
+    const withTransfer = [
+      tx("pre-1", "2026-05-10T00:00:00.000Z", 1000),
+      { ...tx("transfer", "2026-07-10T00:00:00.000Z", 500), transaction_type: "Transfer" },
+      tx("month-1", "2026-07-15T00:00:00.000Z", -150),
+    ];
+    const rows = buildLedger(withTransfer, "2026-07");
+    expect(rows.map((r) => r.id)).toEqual(["month-1", "transfer"]);
+    expect(rows[0].balance).toBe(850);
+    expect(rows[1].balance).toBe(1000);
+  });
 });
