@@ -80,14 +80,17 @@ export type Database = {
       }
       profiles: {
         Row: {
+          display_currency: string | null
           id: string
           updated_at: string | null
         }
         Insert: {
+          display_currency?: string | null
           id: string
           updated_at?: string | null
         }
         Update: {
+          display_currency?: string | null
           id?: string
           updated_at?: string | null
         }
