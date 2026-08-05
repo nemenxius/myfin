@@ -38,6 +38,7 @@ import {
 import { useTransactions } from "@/hooks/use-transactions";
 import { usePrimaryCurrency } from "@/hooks/use-primary-currency";
 import { formatCurrency } from "@/lib/format";
+import { monthLabel, monthWindow } from "@/lib/month";
 import { TransactionForm } from "./transaction-form";
 import type { Tables } from "@/types/database";
 
@@ -49,9 +50,10 @@ const typeStyles: Record<string, string> = {
   transfer: "bg-zinc-100 text-zinc-700",
 };
 
-export function TransactionList() {
+export function TransactionList({ month }: { month: string }) {
   const { data: transactions, isLoading, deleteTransaction } = useTransactions();
   const { currency } = usePrimaryCurrency();
+  const monthName = monthLabel(month);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
@@ -59,17 +61,40 @@ export function TransactionList() {
 
   const rows = useMemo(() => {
     if (!transactions) return [];
-    const chronological = [...transactions].sort(
-      (a, b) =>
-        new Date(a.date).getTime() - new Date(b.date).getTime()
+    const { start, end } = monthWindow(month);
+    const startTs = start.getTime();
+    const endTs = end.getTime();
+
+    let seed = 0;
+    const inMonth: Transaction[] = [];
+    for (const t of transactions) {
+      const ts = new Date(t.date).getTime();
+      if (ts < startTs) {
+        seed += t.amount;
+      } else if (ts < endTs) {
+        inMonth.push(t);
+      }
+    }
+
+    const chronological = [...inMonth].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
-    let running = 0;
-    const withBalance = chronological.map((transaction) => {
-      running += transaction.amount;
-      return { ...transaction, balance: running };
+    let running = seed;
+    const withBalance = chronological.map((t) => {
+      running += t.amount;
+      return { ...t, balance: running };
     });
     return withBalance.reverse();
-  }, [transactions]);
+  }, [transactions, month]);
+
+  const defaultDate = useMemo(() => {
+    const currentMonth = format(new Date(), "yyyy-MM");
+    if (month === currentMonth) {
+      return format(new Date(), "yyyy-MM-dd");
+    }
+    const { start } = monthWindow(month);
+    return format(start, "yyyy-MM-dd");
+  }, [month]);
 
   const openCreate = () => {
     setEditing(null);
@@ -96,7 +121,7 @@ export function TransactionList() {
             Ledger
           </CardTitle>
           <p className="mt-0.5 text-xs text-fog">
-            Every movement, with the balance after each line.
+            {monthName} — every movement, with the balance after each line.
           </p>
         </div>
         <Button onClick={openCreate}>
@@ -116,6 +141,14 @@ export function TransactionList() {
             <Button variant="outline" size="sm" onClick={openCreate}>
               <Plus />
               Add your first
+            </Button>
+          </div>
+        ) : rows.length === 0 ? (
+          <div className="flex h-40 flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+            <p>No transactions in {monthName}.</p>
+            <Button variant="outline" size="sm" onClick={openCreate}>
+              <Plus />
+              Add transaction
             </Button>
           </div>
         ) : (
@@ -198,6 +231,7 @@ export function TransactionList() {
         open={formOpen}
         onOpenChange={setFormOpen}
         transaction={editing}
+        defaultDate={defaultDate}
       />
 
       <AlertDialog open={!!deleting} onOpenChange={(open) => !open && setDeleting(null)}>

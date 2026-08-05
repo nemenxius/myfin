@@ -34,7 +34,7 @@ export default async function Dashboard({
         className="animate-fade-in-up"
         style={{ animationDelay: "120ms" }}
       >
-        <TransactionList />
+        <TransactionList month={month} />
       </div>
     </div>
   );
