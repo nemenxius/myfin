@@ -1,4 +1,5 @@
 import { DashboardHeader } from "@/components/dashboard/header";
+import { OnboardingGate } from "@/components/auth/onboarding-gate";
 
 export default function DashboardLayout({
   children,
@@ -7,8 +8,10 @@ export default function DashboardLayout({
 }>) {
   return (
     <main className="min-h-screen bg-background">
-      <DashboardHeader />
-      <div className="mx-auto max-w-6xl px-6 py-8">{children}</div>
+      <OnboardingGate>
+        <DashboardHeader />
+        <div className="mx-auto max-w-6xl px-6 py-8">{children}</div>
+      </OnboardingGate>
     </main>
   );
 }
