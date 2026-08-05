@@ -19,8 +19,10 @@ MyFin is a personal finance tracker (expense tracker) built as a Next.js web app
 
 ```
 app/
-  (auth)/login/       # Login page
-  dashboard/          # Dashboard page (stat cards, chart + side panel, ledger)
+  (auth)/auth/        # Sign in / sign up
+  auth/callback + auth/confirm # OAuth/email route handlers
+  onboarding/         # Display-currency onboarding
+  dashboard/          # Dashboard page (stat cards, chart + side panel, ledger) + settings
   dashboard/layout.tsx # Shared dashboard shell (header + nav)
   dashboard/accounts/ # Accounts management page
   layout.tsx          # Root layout — loads brand fonts (Public Sans, Newsreader, IBM Plex Mono)
@@ -29,16 +31,19 @@ app/
   page.tsx            # Landing page
 components/
   accounts/           # account-currencies, account-form, account-list, account-types
+  auth/               # auth-form, user-menu, onboarding-gate, update-password-form
   brand/              # Logo (SVG wallet mark)
   dashboard/          # header, stat-card, stat-cards, side-panel, spending-chart
-  landing/            # header, hero, hero-visual, waitlist-form
+  landing/            # header, hero, hero-visual
   transactions/       # transaction-list (ledger), transaction-form
   ui/                 # Shadcn/Base UI primitives (card, table, button, dialog, etc.)
 hooks/
+  use-auth.tsx          # Auth state (user/session) via AuthProvider (mounted in providers.tsx)
+  use-profile.ts        # Profile row (display_currency) query
   use-transactions.ts   # CRUD + optimistic mutations for transactions
   use-accounts.ts       # CRUD for accounts
   use-categories.ts     # Read-only categories query
-  use-primary-currency.ts # First account's currency (USD fallback) for aggregate displays
+  use-primary-currency.ts # Profile display_currency → first account's currency → USD fallback
 lib/
   supabase/client.ts  # Browser Supabase client (createBrowserClient)
   supabase/server.ts  # Server Supabase client (createServerClient, cookie-based)
@@ -57,6 +62,7 @@ supabase/
 - All server state goes through **TanStack Query** hooks in `hooks/` — never call Supabase directly inside components.
 - Browser queries use `supabaseClient` from `lib/supabase/client.ts`; server components/actions use `createClient()` from `lib/supabase/server.ts`.
 - Generated types come from `types/database.ts`. Use the `Tables<T>` / `TablesInsert<T>` helper types (e.g. `Tables<"transactions">`), **not** handwritten aliases. `transaction_type` and `account_type` are plain strings (not unions) in the generated types.
+- Auth state flows through `useAuth()` (`hooks/use-auth.tsx`, mounted in `app/providers.tsx`) and the profile row through `useProfile()`. `usePrimaryCurrency` resolves: `profiles.display_currency` → first account's currency → `"USD"`. Route protection lives in `middleware.ts` (refreshes the session, guards `/dashboard*` + `/onboarding`, bounces signed-in users off `/auth`).
 
 ### Database / RLS conventions
 - **UUID primary keys** everywhere (`gen_random_uuid()`), with `user_id` referencing `profiles(id)`.
@@ -150,6 +156,13 @@ supabase db reset    # reset local DB and re-run migrations + seed
 - **Multi-currency aggregates (decision):** aggregate totals (ledger running balance, Combined balance, account-list total) sum raw `amount` values across accounts regardless of currency and label them in the primary currency. This assumes a single-currency-per-user reality; there is **no FX conversion**. Per-currency ledgers / FX conversion are a future feature, not a bug to fix silently.
 - **Robustness (decision):** `lib/format.ts` validates currency codes (`/^[A-Za-z]{3}$/`) and wraps `Intl.NumberFormat` in a `try/catch` — invalid/garbage `accounts.currency` values (legacy free-text rows) fall back to `"USD"` instead of throwing a `RangeError` that would crash the dashboard render. Unknown-but-well-formed 3-letter codes render as literals.
 - No schema or env changes.
+
+**Auth feature (2026-08-05):**
+- Full auth flow: email + Google signup, email-confirmed accounts, display-currency onboarding, password reset, logout, settings page, middleware route protection.
+- Schema change: migration `003_profile_display_currency.sql` (nullable `profiles.display_currency` + profiles UPDATE policy). **Must be applied to the remote DB** (dashboard SQL editor).
+- Manual Supabase config required: Confirm email ON, Password Length 8, Site URL `http://localhost:3000`, Google provider enabled, email templates pointed at `/auth/confirm` and `/auth/update-password`.
+- The auth page lives at `/auth?mode=signup|signin` (old `/login` removed); landing links there.
+- Decision: email-signup currency is held in `localStorage` (`pendingDisplayCurrency`) and applied on first authenticated load because email confirmation yields no session at signup time; Google users get an onboarding step instead.
 
 ## 6. Agent Maintenance Guideline
 
