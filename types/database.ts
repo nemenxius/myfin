@@ -104,6 +104,7 @@ export type Database = {
           date: string
           description: string | null
           id: string
+          to_account_id?: string | null
           transaction_type: string
           user_id: string
         }
@@ -114,6 +115,7 @@ export type Database = {
           date?: string
           description?: string | null
           id?: string
+          to_account_id?: string | null
           transaction_type: string
           user_id: string
         }
@@ -124,6 +126,7 @@ export type Database = {
           date?: string
           description?: string | null
           id?: string
+          to_account_id?: string | null
           transaction_type?: string
           user_id?: string
         }
@@ -140,6 +143,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_to_account_id_fkey"
+            columns: ["to_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
           {
