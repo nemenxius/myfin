@@ -1,9 +1,22 @@
+"use client";
+
 import { useAccounts } from "./use-accounts";
+import { useProfile } from "./use-profile";
 
 export function usePrimaryCurrency() {
-  const { data: accounts, isLoading, isError } = useAccounts();
+  const profileQuery = useProfile();
+  const {
+    data: accounts,
+    isLoading: accountsLoading,
+    isError: accountsError,
+  } = useAccounts();
 
-  const currency = accounts && accounts.length > 0 ? accounts[0].currency : "USD";
+  const currency =
+    profileQuery.data?.display_currency ?? accounts?.[0]?.currency ?? "USD";
 
-  return { currency, isLoading, isError };
+  return {
+    currency,
+    isLoading: profileQuery.isLoading || accountsLoading,
+    isError: profileQuery.isError || accountsError,
+  };
 }

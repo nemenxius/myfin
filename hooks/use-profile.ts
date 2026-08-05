@@ -1,0 +1,45 @@
+"use client";
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabaseClient } from "@/lib/supabase/client";
+import { useAuth } from "./use-auth";
+import type { Tables } from "@/types/database";
+
+type Profile = Tables<"profiles">;
+
+export function useProfile() {
+  const { user } = useAuth();
+  const userId = user?.id;
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
+    queryKey: ["profile", userId],
+    enabled: Boolean(userId),
+    queryFn: async (): Promise<Profile | null> => {
+      if (!userId) return null;
+      const { data, error } = await supabaseClient
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const updateDisplayCurrency = useMutation({
+    mutationFn: async (currency: string) => {
+      if (!userId) throw new Error("Not authenticated");
+      const { error } = await supabaseClient
+        .from("profiles")
+        .update({ display_currency: currency })
+        .eq("id", userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["profile", userId] });
+    },
+  });
+
+  return { ...query, updateDisplayCurrency };
+}
