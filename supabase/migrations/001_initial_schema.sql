@@ -34,7 +34,7 @@ CREATE TABLE transactions (
   account_id UUID REFERENCES accounts(id) ON DELETE CASCADE NOT NULL,
   category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
   amount NUMERIC NOT NULL, -- Positive for income, negative for expense
-  transaction_type TEXT CHECK (transaction_type IN ('income', 'expense', 'transfer')) NOT NULL,
+  transaction_type TEXT CHECK (transaction_type IN ('Income', 'Expense', 'Transfer')) NOT NULL,
   date TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
   description TEXT
 );
