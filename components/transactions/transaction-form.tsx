@@ -8,6 +8,7 @@ import { useTransactions } from "@/hooks/use-transactions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CategoryIcon } from "@/components/categories/category-icons";
 import { Landmark } from "lucide-react";
 import {
   Dialog,
@@ -228,11 +229,24 @@ export function TransactionForm({
               }))}
             >
               <SelectTrigger id="category" className="w-full">
-                <SelectValue placeholder="Select category (optional)" />
+                <SelectValue>
+                  {(value) => {
+                    const cat = categories?.find((c) => c.id === value);
+                    return cat ? (
+                      <>
+                        <CategoryIcon slug={cat.icon} className="h-4 w-4 text-fog" />
+                        {cat.name}
+                      </>
+                    ) : (
+                      "Select category (optional)"
+                    );
+                  }}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {(categories ?? []).map((category) => (
                   <SelectItem key={category.id} value={category.id}>
+                    <CategoryIcon slug={category.icon} className="h-4 w-4 text-fog" />
                     {category.name}
                   </SelectItem>
                 ))}
