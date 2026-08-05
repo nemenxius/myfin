@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { HeroVisual } from "./hero-visual";
-import { WaitlistForm } from "./waitlist-form";
+import { Button } from "@/components/ui/button";
 
 export function Hero() {
   return (
@@ -13,10 +14,26 @@ export function Hero() {
           <span className="text-blue-700">Simplified.</span>
         </h1>
         <p className="mt-5 max-w-md text-lg leading-relaxed text-zinc-600">
-          An account-based expense tracker with powerful visual insights.
-          Launching soon.
+          An account-based expense tracker with powerful visual insights. Track
+          income and spending across accounts, all in one place.
         </p>
-        <WaitlistForm />
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Button
+            render={<Link href="/auth?mode=signup" />}
+            nativeButton={false}
+            className="h-12 rounded-xl bg-blue-700 px-6 text-white shadow-sm hover:bg-blue-800"
+          >
+            Create free account
+          </Button>
+          <Button
+            render={<Link href="/auth?mode=signin" />}
+            nativeButton={false}
+            variant="outline"
+            className="h-12 rounded-xl border-zinc-200 bg-white px-6 shadow-sm hover:bg-zinc-50"
+          >
+            Sign in
+          </Button>
+        </div>
       </div>
 
       <HeroVisual />

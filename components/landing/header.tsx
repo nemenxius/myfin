@@ -12,22 +12,23 @@ export function Header() {
         </span>
       </Link>
 
-      <nav className="hidden items-center gap-8 text-sm font-medium text-zinc-600 sm:flex">
-        <a href="#about" className="transition-colors hover:text-zinc-900">
-          About
-        </a>
-        <a href="#waitlist" className="transition-colors hover:text-zinc-900">
-          Waitlist
-        </a>
-      </nav>
-
-      <Button
-        render={<Link href="/login" />}
-        nativeButton={false}
-        className="rounded-full bg-zinc-800 px-5 text-white hover:bg-zinc-700"
-      >
-        Sign In
-      </Button>
+      <div className="flex items-center gap-3">
+        <Button
+          render={<Link href="/auth?mode=signup" />}
+          nativeButton={false}
+          variant="outline"
+          className="rounded-full border-zinc-200 bg-white px-5 text-zinc-800 hover:bg-zinc-50"
+        >
+          Create Account
+        </Button>
+        <Button
+          render={<Link href="/auth?mode=signin" />}
+          nativeButton={false}
+          className="rounded-full bg-zinc-800 px-5 text-white hover:bg-zinc-700"
+        >
+          Sign In
+        </Button>
+      </div>
     </header>
   );
 }
