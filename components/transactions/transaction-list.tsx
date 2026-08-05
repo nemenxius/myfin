@@ -39,6 +39,7 @@ import { useTransactions } from "@/hooks/use-transactions";
 import { usePrimaryCurrency } from "@/hooks/use-primary-currency";
 import { formatCurrency } from "@/lib/format";
 import { monthLabel, monthWindow } from "@/lib/month";
+import { buildLedger } from "@/lib/ledger";
 import { TransactionForm } from "./transaction-form";
 import type { Tables } from "@/types/database";
 
@@ -61,30 +62,7 @@ export function TransactionList({ month }: { month: string }) {
 
   const rows = useMemo(() => {
     if (!transactions) return [];
-    const { start, end } = monthWindow(month);
-    const startTs = start.getTime();
-    const endTs = end.getTime();
-
-    let seed = 0;
-    const inMonth: Transaction[] = [];
-    for (const t of transactions) {
-      const ts = new Date(t.date).getTime();
-      if (ts < startTs) {
-        seed += t.amount;
-      } else if (ts < endTs) {
-        inMonth.push(t);
-      }
-    }
-
-    const chronological = [...inMonth].sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-    let running = seed;
-    const withBalance = chronological.map((t) => {
-      running += t.amount;
-      return { ...t, balance: running };
-    });
-    return withBalance.reverse();
+    return buildLedger(transactions, month);
   }, [transactions, month]);
 
   const defaultDate = useMemo(() => {

@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Tables } from "@/types/database";
+import { dateInputToISO, isoToDateInput } from "@/lib/date";
 
 type Transaction = Tables<"transactions">;
 type TransactionType = "Income" | "Expense" | "Transfer";
@@ -42,7 +43,7 @@ interface FormErrors {
   date?: string;
 }
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => isoToDateInput(new Date().toISOString());
 
 export function TransactionForm({
   open,
@@ -72,7 +73,7 @@ export function TransactionForm({
       setAmount(String(Math.abs(transaction.amount)));
       setAccountId(transaction.account_id);
       setCategoryId(transaction.category_id ?? "");
-      setDate(new Date(transaction.date).toISOString().slice(0, 10));
+      setDate(isoToDateInput(transaction.date));
       setDescription(transaction.description ?? "");
     } else {
       setType("Expense");
@@ -114,7 +115,7 @@ export function TransactionForm({
       category_id: categoryId || null,
       amount: signedAmount,
       transaction_type: type,
-      date: new Date(date).toISOString(),
+      date: dateInputToISO(date),
       description: description || null,
     };
 

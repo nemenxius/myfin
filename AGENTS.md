@@ -178,6 +178,12 @@ supabase db reset    # reset local DB and re-run migrations + seed
 - **No schema or env changes**; no data-layer changes (client-side filter over the `["transactions"]` cache).
 - Commit: `86dd32c` (plan) → feature commits through `15de129`.
 
+**Review fixes: local-midnight dates, pure ledger helper, Vitest (2026-08-05):**
+- New `lib/date.ts` (`dateInputToISO` / `isoToDateInput`) — `transaction-form.tsx` now stores dates at LOCAL midnight instead of UTC midnight, so a transaction dated the 1st no longer falls before the month window's local-midnight start in UTC-negative timezones.
+- Ledger balance math extracted from `transaction-list.tsx` into pure `lib/ledger.ts` (`buildLedger` + exported `LedgerRow`); the component now just calls it in its `rows` useMemo.
+- Added Vitest (`npm test`): `vitest.config.ts` (forces `TZ: America/New_York`, `@` alias), `lib/month.test.ts`, `lib/ledger.test.ts`. 10 tests passing; `npm run build` green.
+- Commit: after `61286c1`.
+
 ## 6. Agent Maintenance Guideline
 
 After completing any major task, feature, or database migration, **update the "Current Status & Recent Progress Log" section above** — add a dated entry describing what was done, note any schema/env changes, and confirm the commit. Keep this file as the single source of truth for project state so future agents can pick up where the last one left off.
