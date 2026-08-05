@@ -164,6 +164,14 @@ supabase db reset    # reset local DB and re-run migrations + seed
 - The auth page lives at `/auth?mode=signup|signin` (old `/login` removed); landing links there.
 - Decision: email-signup currency is held in `localStorage` (`pendingDisplayCurrency`) and applied on first authenticated load because email confirmation yields no session at signup time; Google users get an onboarding step instead.
 
+**Auth hardening (2026-08-05, commit `50cf0f0`):**
+- OnboardingGate no longer dead-ends on a blank dashboard if the pending-currency update fails — it shows an error card with a "Try again" button. It also guards against re-firing the mutation on every render (stable `mutate` + `startedRef`).
+- `useProfile.updateDisplayCurrency` throws `Profile not found` when the update affects 0 rows (previously a silent success that could loop `/onboarding` ↔ `/dashboard` if a `profiles` row was missing).
+- `pendingDisplayCurrency` is now set only after `signUp` succeeds (previously written before the call, leaving stale currency on signup error).
+- `/auth/update-password` form is disabled with a "Verifying…" state until the recovery token is verified.
+- `/auth/callback` validates the `next` param (same-origin path starting with a single `/`) before redirecting.
+- Deferred: Next 16.3 deprecates `middleware.ts` in favor of `proxy.ts` (warning only; auth-critical file — migrate as a separate task).
+
 ## 6. Agent Maintenance Guideline
 
 After completing any major task, feature, or database migration, **update the "Current Status & Recent Progress Log" section above** — add a dated entry describing what was done, note any schema/env changes, and confirm the commit. Keep this file as the single source of truth for project state so future agents can pick up where the last one left off.
