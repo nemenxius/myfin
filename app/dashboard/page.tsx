@@ -26,9 +26,9 @@ export default async function Dashboard({
         style={{ animationDelay: "60ms" }}
       >
         <div className="lg:col-span-2">
-          <SpendingChart />
+          <SpendingChart month={month} />
         </div>
-        <SidePanel />
+        <SidePanel month={month} />
       </div>
       <div
         className="animate-fade-in-up"

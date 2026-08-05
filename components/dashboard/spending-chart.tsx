@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { format, startOfMonth, subMonths } from "date-fns";
+import { format, getDaysInMonth } from "date-fns";
 import {
   Area,
   AreaChart,
@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTransactions } from "@/hooks/use-transactions";
 import { usePrimaryCurrency } from "@/hooks/use-primary-currency";
 import { formatCurrency, getCurrencySymbol } from "@/lib/format";
+import { monthWindow } from "@/lib/month";
 
 function CustomTooltip({
   active,
@@ -39,34 +40,40 @@ function CustomTooltip({
   );
 }
 
-export function SpendingChart() {
+export function SpendingChart({ month }: { month: string }) {
   const { data: transactions, isLoading } = useTransactions();
   const { currency } = usePrimaryCurrency();
 
   const data = useMemo(() => {
-    const now = new Date();
-    const months = Array.from({ length: 6 }, (_, i) =>
-      startOfMonth(subMonths(now, 5 - i))
-    );
+    const { start, end } = monthWindow(month);
+    const startTs = start.getTime();
+    const endTs = end.getTime();
+    const daysInMonth = getDaysInMonth(start);
 
-    const byMonth = new Map<string, number>();
+    const byDay = new Map<number, number>();
     for (const transaction of transactions ?? []) {
       if (transaction.amount >= 0) continue;
-      const key = format(new Date(transaction.date), "yyyy-MM");
-      byMonth.set(key, (byMonth.get(key) ?? 0) + Math.abs(transaction.amount));
+      const ts = new Date(transaction.date).getTime();
+      if (ts >= startTs && ts < endTs) {
+        const day = new Date(transaction.date).getDate();
+        byDay.set(day, (byDay.get(day) ?? 0) + Math.abs(transaction.amount));
+      }
     }
 
-    return months.map((month) => ({
-      month: format(month, "MMM"),
-      amount: byMonth.get(format(month, "yyyy-MM")) ?? 0,
-    }));
-  }, [transactions]);
+    return Array.from({ length: daysInMonth }, (_, i) => {
+      const day = i + 1;
+      return {
+        day: String(day),
+        amount: byDay.get(day) ?? 0,
+      };
+    });
+  }, [transactions, month]);
 
   return (
     <Card className="h-full border-border/50 bg-white shadow-sm">
       <CardHeader>
         <CardTitle className="font-display text-base font-medium text-ink">
-          Monthly spending
+          Daily spending
         </CardTitle>
       </CardHeader>
       <CardContent className="flex min-h-0 flex-1 flex-col">
@@ -93,11 +100,12 @@ export function SpendingChart() {
                 stroke="#e6eaee"
               />
               <XAxis
-                dataKey="month"
+                dataKey="day"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 12, fill: "#6c7a83" }}
+                tick={{ fontSize: 11, fill: "#6c7a83" }}
                 dy={6}
+                interval={Math.max(1, Math.floor(data.length / 8))}
               />
               <YAxis
                 tickLine={false}
@@ -111,6 +119,11 @@ export function SpendingChart() {
               <Tooltip
                 content={<CustomTooltip currency={currency} />}
                 cursor={{ stroke: "#18848c", strokeDasharray: "4 4" }}
+                labelFormatter={(label) => {
+                  const day = parseInt(String(label), 10);
+                  const [year, monthIndex] = month.split("-").map(Number);
+                  return format(new Date(year, monthIndex - 1, day), "MMM d, yyyy");
+                }}
               />
               <Area
                 type="monotone"

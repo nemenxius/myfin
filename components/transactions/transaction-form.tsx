@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Tables } from "@/types/database";
-import { dateInputToISO, isoToDateInput } from "@/lib/date";
+import { dateInputToISO, isoToDateInput, isoToTimeInput } from "@/lib/date";
 
 type Transaction = Tables<"transactions">;
 type TransactionType = "Income" | "Expense" | "Transfer";
@@ -64,6 +64,7 @@ export function TransactionForm({
   const [toAccountId, setToAccountId] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [date, setDate] = useState(today);
+  const [time, setTime] = useState("00:00");
   const [description, setDescription] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
 
@@ -78,6 +79,7 @@ export function TransactionForm({
       setToAccountId(transaction.to_account_id ?? "");
       setCategoryId(transaction.category_id ?? "");
       setDate(isoToDateInput(transaction.date));
+      setTime(isoToTimeInput(transaction.date));
       setDescription(transaction.description ?? "");
     } else {
       setType("Expense");
@@ -86,6 +88,7 @@ export function TransactionForm({
       setToAccountId("");
       setCategoryId("");
       setDate(defaultDate ?? today());
+      setTime("00:00");
       setDescription("");
     }
   }, [open, transaction, defaultAccountId, defaultDate]);
@@ -128,7 +131,7 @@ export function TransactionForm({
       category_id: categoryId || null,
       amount: signedAmount,
       transaction_type: type,
-      date: dateInputToISO(date),
+      date: dateInputToISO(date, time),
       description: description || null,
     };
 
@@ -324,32 +327,42 @@ export function TransactionForm({
            </div>
          )}
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-1.5">
-              <Label htmlFor="date">Date</Label>
-              <Input
-                id="date"
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                aria-invalid={!!errors.date}
-              />
-              {errors.date && (
-                <p className="text-xs text-destructive">{errors.date}</p>
-              )}
-            </div>
+<div className="grid grid-cols-3 gap-4">
+             <div className="grid gap-1.5">
+               <Label htmlFor="date">Date</Label>
+               <Input
+                 id="date"
+                 type="date"
+                 value={date}
+                 onChange={(e) => setDate(e.target.value)}
+                 aria-invalid={!!errors.date}
+               />
+               {errors.date && (
+                 <p className="text-xs text-destructive">{errors.date}</p>
+               )}
+             </div>
 
-            <div className="grid gap-1.5">
-              <Label htmlFor="description">Description</Label>
-              <Input
-                id="description"
-                type="text"
-                placeholder="Notes or payee"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-          </div>
+             <div className="grid gap-1.5">
+               <Label htmlFor="time">Time</Label>
+               <Input
+                 id="time"
+                 type="time"
+                 value={time}
+                 onChange={(e) => setTime(e.target.value)}
+               />
+             </div>
+
+             <div className="grid gap-1.5">
+               <Label htmlFor="description">Description</Label>
+               <Input
+                 id="description"
+                 type="text"
+                 placeholder="Notes or payee"
+                 value={description}
+                 onChange={(e) => setDescription(e.target.value)}
+               />
+             </div>
+           </div>
 
           <DialogFooter>
             <Button
