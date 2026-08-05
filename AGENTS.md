@@ -1,202 +1,182 @@
 # AGENTS.md
 
-Project memory and instruction guide for AI coding agents working on **MyFin**.
+Project memory and operating guide for AI coding agents working on **MyFin**.
 
-## 1. Project Overview & Tech Stack
+Keep this file compact and current. It should preserve durable architecture, rules, commands, migration state, and active follow-ups. Do not use it as a full chronological changelog; detailed feature specs/plans live in `docs/superpowers/` and history is in git.
 
-MyFin is a personal finance tracker (expense tracker) built as a Next.js web app. It lets a user record income/expense transactions across accounts, categorize them, and view their net position, monthly spending, and a running-balance ledger.
+## 1. Project Snapshot
 
-- **Framework:** Next.js 16 (App Router, React 19, Turbopack)
-- **Styling:** Tailwind CSS v4 (CSS-first config via `@theme` in `app/globals.css`), `tw-animate-css`
-- **UI components:** Shadcn UI (v4) built on **Base UI** primitives (`@base-ui/react`) — note: Base UI buttons use a `render` prop, not `asChild`
-- **State / data fetching:** TanStack Query (v5) for server state + optimistic mutations
-- **Database:** Supabase (Postgres) with Row Level Security; **no ORM** — raw Supabase JS client + generated TypeScript types
-- **Icons:** Lucide React
-- **Charts:** Recharts
-- **Utilities:** `date-fns`, `clsx`, `tailwind-merge`, `class-variance-authority`
+MyFin is a personal finance tracker built with **Next.js 16 App Router** and **React 19**. Users manage accounts, income/expense transactions, custom categories, display currency, and a dashboard with monthly stat cards, spending chart, side panel, and running-balance ledger.
 
-## 2. Directory Structure & Architecture
+- **Framework:** Next.js 16, React 19, Turbopack.
+- **Styling:** Tailwind CSS v4 via `app/globals.css` `@theme`; `tw-animate-css`.
+- **UI:** Shadcn-style components in `components/ui/` built on **Base UI** primitives.
+- **Data:** TanStack Query v5 hooks in `hooks/`.
+- **Database/Auth:** Supabase Postgres + RLS, raw Supabase JS clients, generated types in `types/database.ts`; no ORM.
+- **Visuals:** Lucide React icons, Recharts.
+- **Utilities:** `date-fns`, `clsx`, `tailwind-merge`, `class-variance-authority`.
 
-```
+## 2. Current Architecture Map
+
+```txt
 app/
-  (auth)/auth/        # Sign in / sign up
-  auth/callback + auth/confirm # OAuth/email route handlers
-  onboarding/         # Display-currency onboarding
-  dashboard/          # Dashboard page (stat cards, chart + side panel, ledger) + settings
-  dashboard/layout.tsx # Shared dashboard shell (header + nav)
-  dashboard/accounts/ # Accounts management page
-  layout.tsx          # Root layout — loads brand fonts (Public Sans, Newsreader, IBM Plex Mono)
-  globals.css         # Tailwind v4 theme tokens, brand palette, animations, utilities
-  providers.tsx       # TanStack Query provider wrapper
-  page.tsx            # Landing page
+  (auth)/auth/              # Sign in / sign up page
+  auth/callback             # OAuth callback route
+  auth/confirm              # Email/OTP confirmation route
+  auth/update-password      # Password recovery page
+  onboarding/               # Display-currency onboarding
+  dashboard/                # Overview, accounts, settings routes
+  layout.tsx                # Root layout and brand fonts
+  providers.tsx             # TanStack Query + auth providers
 components/
-  accounts/           # account-currencies, account-form, account-list, account-types
-  auth/               # auth-form, user-menu, onboarding-gate, update-password-form
-  brand/              # Logo (SVG wallet mark)
-  dashboard/          # header, stat-card, stat-cards, side-panel, spending-chart
-  landing/            # header, hero, hero-visual
-  transactions/       # transaction-list (ledger), transaction-form
-  ui/                 # Shadcn/Base UI primitives (card, table, button, dialog, etc.)
+  accounts/                 # Account CRUD, currencies, account type constants
+  auth/                     # Auth forms, user menu, onboarding gate
+  categories/               # Category CRUD UI and Lucide icon renderer
+  dashboard/                # Header, stat cards, month selector, chart, side panel
+  transactions/             # Transaction form and ledger table
+  ui/                       # Base UI / Shadcn primitives
 hooks/
-  use-auth.tsx          # Auth state (user/session) via AuthProvider (mounted in providers.tsx)
-  use-profile.ts        # Profile row (display_currency) query
-  use-transactions.ts   # CRUD + optimistic mutations for transactions
-  use-accounts.ts       # CRUD for accounts
-  use-categories.ts     # Read-only categories query
-  use-primary-currency.ts # Profile display_currency → first account's currency → USD fallback
+  use-auth.tsx              # AuthProvider/useAuth session state
+  use-profile.ts            # profiles row + display currency mutation
+  use-primary-currency.ts   # profile currency -> first account -> USD fallback
+  use-accounts.ts           # Account CRUD
+  use-categories.ts         # Category CRUD
+  use-transactions.ts       # Transaction CRUD
 lib/
-  supabase/client.ts  # Browser Supabase client (createBrowserClient)
-  supabase/server.ts  # Server Supabase client (createServerClient, cookie-based)
-  format.ts           # formatCurrency(amount, currency) + getCurrencySymbol (Intl.NumberFormat)
-  utils.ts            # cn() helper
-types/
-  database.ts         # Generated Supabase types (Tables<T> / TablesInsert<T>)
+  supabase/client.ts        # Browser Supabase client
+  supabase/server.ts        # Server Supabase client
+  format.ts                 # Currency formatting helpers
+  month.ts                  # Month parsing/window/labels
+  date.ts                   # Date input <-> local-midnight ISO helpers
+  ledger.ts                 # Pure ledger/running-balance helper
 supabase/
-  migrations/         # SQL migrations (001_initial_schema.sql)
-  seed.sql            # Global categories seed
+  migrations/               # Numbered SQL migrations
+  seed.sql                  # Global categories seed
+proxy.ts                    # Next 16.3 Proxy auth/session refresh; replaces middleware.ts
 ```
 
-## 3. Key Architectural Rules & Patterns
+## 3. Non-Negotiable Rules
 
-### Data fetching
-- All server state goes through **TanStack Query** hooks in `hooks/` — never call Supabase directly inside components.
-- Browser queries use `supabaseClient` from `lib/supabase/client.ts`; server components/actions use `createClient()` from `lib/supabase/server.ts`.
-- Generated types come from `types/database.ts`. Use the `Tables<T>` / `TablesInsert<T>` helper types (e.g. `Tables<"transactions">`), **not** handwritten aliases. `transaction_type` and `account_type` are plain strings (not unions) in the generated types.
-- Auth state flows through `useAuth()` (`hooks/use-auth.tsx`, mounted in `app/providers.tsx`) and the profile row through `useProfile()`. `usePrimaryCurrency` resolves: `profiles.display_currency` → first account's currency → `"USD"`. Route protection lives in `middleware.ts` (refreshes the session, guards `/dashboard*` + `/onboarding`, bounces signed-in users off `/auth`).
+### Data Fetching
 
-### Database / RLS conventions
-- **UUID primary keys** everywhere (`gen_random_uuid()`), with `user_id` referencing `profiles(id)`.
-- **Global vs user categories:** `categories.user_id` is nullable. `NULL` = global category (visible to all users, seeded in `supabase/seed.sql`); a non-null `user_id` = a user's custom category. RLS policy: `user_id IS NULL OR auth.uid() = user_id`.
-- RLS is enabled on all tables; policies enforce that users only see/manage their own rows. Transactions must reference an account owned by the same user (enforced via a `WITH CHECK` policy).
-- `amount` is `NUMERIC`: **positive = income, negative = expense**.
-- Schema changes go in `supabase/migrations/` as numbered SQL files; seed data in `supabase/seed.sql`.
+- Components do **not** call Supabase directly. Use TanStack Query hooks in `hooks/`.
+- Browser data uses `supabaseClient` from `lib/supabase/client.ts`; server code uses `createClient()` from `lib/supabase/server.ts`.
+- Use generated helpers from `types/database.ts`: `Tables<T>` and `TablesInsert<T>`. Do not handwrite DB row aliases unless they wrap generated types.
+- `transaction_type` and `account_type` are plain strings in generated types, not database enum unions.
 
-### Optimistic UI guidelines
-- Mutations use `useMutation` with `onMutate` to optimistically update the cache, `onError` to roll back to the previous snapshot, and `onSettled` to `invalidateQueries`.
-- `useTransactions` follows this pattern (add/update/delete). `useAccounts` uses the simpler `onSuccess` → `invalidateQueries` pattern.
-- `addTransaction` resolves `user_id` internally via `auth.getUser()` — callers pass everything except `user_id`.
+### Auth And Routing
 
-### Styling conventions
-- Tailwind v4 CSS-first: tokens are defined in `@theme inline` and `:root`/`.dark` blocks in `app/globals.css`.
-- Brand palette: navy `#083458`, teal `#18848C`, paper background `#F4F5F3`, ink `#0B1C28`, fog `#6C7A83`, leaf `#0E7C5B` (income/positive), ember `#C0392B` (expense/negative).
-- Type system: **Public Sans** (body/UI, `--font-sans`), **Newsreader** (serif display, `--font-display`), **IBM Plex Mono** (all money figures, `--font-mono`). Use `font-mono tabular-nums` for any currency amount.
-- Prefer existing Shadcn primitives in `components/ui/` over hand-rolled markup. Remember Base UI quirks (e.g. `render` prop on buttons, `onValueChange` on Select passes `string | null`).
+- Auth state flows through `useAuth()` from `hooks/use-auth.tsx`, mounted in `app/providers.tsx`.
+- Route protection/session refresh lives in `proxy.ts` using the Next 16.3 Proxy convention. Do not recreate `middleware.ts`.
+- Protected routes: `/dashboard*` and `/onboarding`. Signed-in users visiting `/auth` are redirected to `/dashboard`.
+- Email-signup currency is temporarily stored in `localStorage` as `pendingDisplayCurrency`; Google users may go through onboarding.
 
-## 4. Project Setup & Commands
+### Database And RLS
+
+- UUID primary keys everywhere (`gen_random_uuid()`). User-owned tables reference `profiles(id)`.
+- `profiles` rows are auto-created by migration `002_auto_create_profiles.sql` trigger.
+- Categories: `categories.user_id IS NULL` means global/read-only seeded category; non-null means user custom category.
+- Category RLS allows selecting global + own categories, inserting own categories, and updating/deleting own custom categories only.
+- Transactions must reference an account owned by the same user. Category ownership validation on transaction insert is a known future hardening item.
+- `transactions.amount`: positive = income, negative = expense.
+- Schema changes go in `supabase/migrations/` as numbered SQL files; seed changes go in `supabase/seed.sql`.
+
+### Optimistic UI
+
+- Mutations should use `onMutate` snapshot/optimistic update, `onError` rollback, and `onSettled` invalidation unless there is a clear reason not to.
+- `useTransactions`, `useAccounts`, and `useCategories` are the patterns to copy.
+- Create mutations resolve `user_id` internally via `auth.getUser()`; callers should not pass `user_id`.
+
+### Styling And UI
+
+- Brand colors: navy `#083458`, teal `#18848C`, paper `#F4F5F3`, ink `#0B1C28`, fog `#6C7A83`, leaf `#0E7C5B`, ember `#C0392B`.
+- Fonts: Public Sans (`--font-sans`), Newsreader (`--font-display`), IBM Plex Mono (`--font-mono`). Use `font-mono tabular-nums` for money.
+- Prefer primitives in `components/ui/` over custom base markup.
+- Base UI quirks: `Button` uses `render` rather than `asChild`; Select `onValueChange` passes `string | null`; `SelectValue` supports a function child for custom selected rendering.
+- Category icons use `components/categories/category-icons.tsx` (`CategoryIcon` with `Tag` fallback). Dashboard side-panel icons are tinted to donut colors; transaction-form dropdown icons use `text-fog`.
+
+## 4. Commands And Verification
 
 ```bash
-npm install          # install dependencies
-npm run dev          # start dev server (http://localhost:3000)
-npm run build        # production build (type-checks + prerenders)
-npm run start        # run production build
-npm run lint         # run ESLint (next lint)
+npm install        # install dependencies
+npm run dev        # local dev server, usually http://localhost:3000
+npm run build      # production build; type-checks and prerenders
+npm test           # Vitest suite; currently 10 tests
+npm run start      # run production build
 ```
 
-**Supabase type generation** (after schema changes):
+- Do **not** run `npm run lint`: this repo still has the old `next lint` script and no ESLint config; Next 16 removed `next lint`.
+- `npm test` currently passes but emits a known non-failing Vite warning about native config loading and ESM syntax in `vitest.config.ts`.
+- Fresh completion claims require `npm run build && npm test` unless the task is docs-only and the user explicitly scopes verification differently.
+
+## 5. Supabase And Environment
+
+Environment variables in `.env.local`:
+
+```txt
+NEXT_PUBLIC_SUPABASE_URL=<project URL>
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<publishable key>
+```
+
+- The clients use `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, not the legacy anon key.
+- Never expose or commit a service-role key.
+- Placeholder/invalid Supabase URL values can break `/auth` with `Invalid supabaseUrl`; use valid-shaped values for builds.
+- Supabase CLI is not installed in this dev environment. Remote migrations are usually applied through the Supabase dashboard SQL editor.
+
+Migration state to preserve:
+
+- `001_initial_schema.sql`: profiles, accounts, categories, transactions, indexes, initial RLS.
+- `002_auto_create_profiles.sql`: backfill + auth trigger for profile rows.
+- `003_profile_display_currency.sql`: nullable `profiles.display_currency` + update policy.
+- `004_category_manage.sql`: update/delete policies for own custom categories. User confirmed this was run remotely on 2026-08-05.
+
+After schema changes, regenerate types with:
 
 ```bash
 supabase gen types typescript --project-id <PROJECT_ID> --schema public > types/database.ts
 ```
 
-**Environment variables** (`.env.local` — never commit real values):
+## 6. Current Feature State
 
-```
-NEXT_PUBLIC_SUPABASE_URL=<project URL>
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<publishable key>
-```
+- Landing page and full auth flow are implemented: email + Google signup, email confirmation, password reset, logout, onboarding, settings page.
+- Dashboard supports `?month=YYYY-MM`; month-aware cards and ledger use `lib/month.ts`, `lib/date.ts`, and `lib/ledger.ts`.
+- Accounts CRUD lives under `/dashboard/accounts`.
+- Transactions support create/edit/delete with optimistic updates and month-default dates.
+- Categories are managed in `/dashboard/settings`: global categories are read-only; users can create/edit/delete custom categories with a Lucide icon picker.
+- Category icons render in the dashboard side-panel by-category list and in the transaction form dropdown.
+- Currency formatting is currency-aware and guarded against invalid currency codes; aggregate multi-currency totals still sum raw values and label them in primary currency. There is no FX conversion.
+- Proxy migration is complete: `proxy.ts` replaced deprecated `middleware.ts`. Restart dev servers if the old deprecation warning persists.
 
-> Note: the browser/server clients use the **publishable key** (`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`), not the legacy anon key. The service-role key must never be exposed to the browser. Placeholder/invalid values cause a 500 on `/auth` (`Invalid supabaseUrl`), so use valid-shaped values when building.
+## 7. Known Follow-Ups
 
-**Database migrations:**
+- Tighten transaction insert/update RLS so `category_id` must be global or owned by the same user.
+- Add UI feedback for failed category/account delete mutations instead of silent optimistic rollback.
+- Consider typing category/account update inputs to exclude `user_id`.
+- Consider a small icon-map drift test for `CATEGORY_ICONS` vs the internal icon map.
+- Settings roadmap: dark mode/theme, default account for new transactions, CSV export, display name, week/month-start preferences, MFA/session management, delete account.
+- Optional tooling cleanup: replace broken `npm run lint` script or add an ESLint config.
+- Optional Vitest cleanup: remove the non-failing native config warning by moving config to `.mjs` or setting package/module configuration intentionally.
 
-```bash
-supabase db push     # apply pending migrations
-supabase db reset    # reset local DB and re-run migrations + seed
-```
+## 8. Token-Saving / Ignore Guidance
 
-## 5. Current Status & Recent Progress Log
+Do not inspect these unless directly relevant to the task:
 
-**Phase 1 (MVP) — complete.** Tasks 1–5 delivered and pushed to `main`:
+- `node_modules/`, `.next/`, `out/`, `build/`, `dist/`
+- `package-lock.json` unless dependency resolution is the task
+- `tsconfig.tsbuildinfo`, `next-env.d.ts`
+- `types/database.ts` unless DB typing/schema work is involved
+- `.superpowers/sdd/` except when resuming or auditing subagent-driven work
+- Large generated/log/data files (`*.log`, `*.sqlite`, `*.db`, `*.csv`, `*.jsonl`, `*.ndjson`, archives)
 
-- **Task 1 — Scaffolding:** Next.js 16 App Router, Tailwind v4, Shadcn UI (Base UI), brand fonts, `globals.css` theme tokens.
-- **Task 2 — Database:** `supabase/migrations/001_initial_schema.sql` (profiles, accounts, categories, transactions; UUID PKs; RLS policies; indexes) + `supabase/seed.sql` (global categories).
-- **Task 3 — Supabase clients:** browser (`lib/supabase/client.ts`) and server (`lib/supabase/server.ts`) clients; `.env.local` with URL + publishable key; generated types in `types/database.ts`.
-- **Task 4 — Data layer:** TanStack Query hooks — `useTransactions` (CRUD + optimistic mutations), `useAccounts`, `useCategories`.
-- **Task 5 — Dashboard UI:** statement-style dashboard — dark navy "statement" band (net position, income/spending split, trend), overlapping insight banner (monthly spend), monthly spending chart (Recharts), and a ledger with running balances.
+Important JSON config files such as `package.json`, `tsconfig.json`, `components.json`, and `next.config.mjs` should remain visible; do not blanket-ignore `*.json`.
 
-**Post-Phase-1 additions:**
-- Landing page (`components/landing/`) with waitlist form and brand SVG logo.
-- Full transaction management (create/edit/delete) with AlertDialog delete confirmation and dropdown row actions.
-- Brand-aligned dashboard visual overhaul, then the current statement-style redesign (commit `0b4d679`).
-- **Account Management (2026-08-04):** full CRUD for accounts. `hooks/use-accounts.ts` now exposes `createAccount`/`updateAccount`/`deleteAccount` (all optimistic with rollback + `invalidateQueries`; `createAccount` resolves `user_id` internally). New `components/accounts/` — `account-form.tsx` (create/edit dialog: name, type, starting balance, currency), `account-list.tsx` (calculated balances = `initial_balance` + Σ transactions, delete AlertDialog warns when linked transactions will cascade), `account-types.ts` (shared type→label map; DB values `checking`/`savings`/`cash`/`brokerage`). Shared `components/dashboard/header.tsx` (Overview/Accounts nav + global "Add Account" button) hosted by new `app/dashboard/layout.tsx`; new route `app/dashboard/accounts/page.tsx`. Transaction form shows an empty-state prompting to create an account when none exist.
+## 9. Maintenance Rule
 
-**Dashboard redesign (2026-08-04):**
-- Replaced the navy "jumbotron" (`components/dashboard/balance-overview.tsx`, deleted) with a responsive row of six stat cards — new `components/dashboard/stat-card.tsx` + `stat-cards.tsx`. Deleted `components/dashboard/insight-banner.tsx`.
-- Added `components/dashboard/side-panel.tsx` (this-month spending with progress bar, category donut + top-3, account balances) and restyled `components/dashboard/spending-chart.tsx`.
-- Rewrote `app/dashboard/page.tsx` to compose: StatCards → chart + side-panel grid (2/3 + 1/3) → TransactionList. No schema or env changes.
-- Note: `npm run lint` is currently broken in this repo — `next lint` was removed in Next 16 and there is no ESLint config.
+After a major feature, bug fix, or database migration, update this file only with durable information:
 
-**Environment & migrations notes:**
-- `.env.local` is in a working state with the real Supabase URL and publishable key.
-- `supabase/.temp`, `.env*`, and `.next` are gitignored.
-- All work is committed on `main` and pushed to `origin/main`.
+- current architecture or command changes
+- new migration state / remote application requirements
+- new known follow-ups
+- changed conventions that future agents must follow
 
-**Bug fix — 409 on account/transaction inserts (2026-08-04):**
-- Symptom: creating an account returned `409 Conflict` on `POST /rest/v1/accounts`; the form closed silently with nothing created.
-- Root cause: `accounts.user_id`/`transactions.user_id` reference `profiles(id)`, but nothing ever created a `profiles` row (no signup trigger, no client insert). Inserts failed the FK (`23503` → PostgREST `409`).
-- Fix: `supabase/migrations/002_auto_create_profiles.sql` — backfills `profiles` for existing `auth.users` and adds an `on_auth_user_created` trigger (SECURITY DEFINER `handle_new_user()`) so new signups get a profile row automatically. **Must be applied to the remote DB** (dashboard SQL editor or `supabase db push`) — the Supabase CLI is not installed in this dev environment.
-- App hardening: `account-form.tsx` now uses `mutateAsync` and keeps the dialog open with an error banner on failure (instead of closing silently); fixed a Base UI `nativeButton` warning on the link-rendered "Create an account" button in `transaction-form.tsx`.
-
-**Currency handling (2026-08-04):**
-- `lib/format.ts`: `formatCurrency(amount, currency = "USD")` is now currency-aware (via `Intl.NumberFormat`); added `getCurrencySymbol(currency = "USD")`.
-- New `hooks/use-primary-currency.ts`: returns `{ currency, isLoading, isError }` — the first account's currency, `"USD"` fallback when there are no accounts. Used by all aggregate displays.
-- New `components/accounts/account-currencies.ts`: `CURRENCIES` (`{ value, label }[]`, same pattern as `ACCOUNT_TYPES`); the account form's currency field is now a Select dropdown.
-- Aggregate displays use the primary currency: stat-cards, spending-chart, transaction-list ledger, and side-panel monthly totals + category donut.
-- Per-account displays use each account's own currency: account-list balances and side-panel account balances.
-- **Multi-currency aggregates (decision):** aggregate totals (ledger running balance, Combined balance, account-list total) sum raw `amount` values across accounts regardless of currency and label them in the primary currency. This assumes a single-currency-per-user reality; there is **no FX conversion**. Per-currency ledgers / FX conversion are a future feature, not a bug to fix silently.
-- **Robustness (decision):** `lib/format.ts` validates currency codes (`/^[A-Za-z]{3}$/`) and wraps `Intl.NumberFormat` in a `try/catch` — invalid/garbage `accounts.currency` values (legacy free-text rows) fall back to `"USD"` instead of throwing a `RangeError` that would crash the dashboard render. Unknown-but-well-formed 3-letter codes render as literals.
-- No schema or env changes.
-
-**Auth feature (2026-08-05):**
-- Full auth flow: email + Google signup, email-confirmed accounts, display-currency onboarding, password reset, logout, settings page, middleware route protection.
-- Schema change: migration `003_profile_display_currency.sql` (nullable `profiles.display_currency` + profiles UPDATE policy). **Must be applied to the remote DB** (dashboard SQL editor).
-- Manual Supabase config required: Confirm email ON, Password Length 8, Site URL `http://localhost:3000`, Google provider enabled, email templates pointed at `/auth/confirm` and `/auth/update-password`.
-- The auth page lives at `/auth?mode=signup|signin` (old `/login` removed); landing links there.
-- Decision: email-signup currency is held in `localStorage` (`pendingDisplayCurrency`) and applied on first authenticated load because email confirmation yields no session at signup time; Google users get an onboarding step instead.
-
-**Auth hardening (2026-08-05, commit `50cf0f0`):**
-- OnboardingGate no longer dead-ends on a blank dashboard if the pending-currency update fails — it shows an error card with a "Try again" button. It also guards against re-firing the mutation on every render (stable `mutate` + `startedRef`).
-- `useProfile.updateDisplayCurrency` throws `Profile not found` when the update affects 0 rows (previously a silent success that could loop `/onboarding` ↔ `/dashboard` if a `profiles` row was missing).
-- `pendingDisplayCurrency` is now set only after `signUp` succeeds (previously written before the call, leaving stale currency on signup error).
-- `/auth/update-password` form is disabled with a "Verifying…" state until the recovery token is verified.
-- `/auth/callback` validates the `next` param (same-origin path starting with a single `/`) before redirecting.
-- Deferred: Next 16.3 deprecates `middleware.ts` in favor of `proxy.ts` (warning only; auth-critical file — migrate as a separate task).
-
-**Month-scoped ledger & stat cards (2026-08-05):**
-- Dashboard accepts `?month=YYYY-MM`; `lib/month.ts` (`parseMonthParam`, `monthWindow`, `monthLabel`) + `components/dashboard/month-selector.tsx` (chevrons + Today, `router.replace` so the back button isn't flooded).
-- Income/Spending/Net/Savings-rate cards follow the month; Net position + Combined balance stay global. Ledger filters to the month with carried-forward seed balances; month-aware subtitle/empty states. Transaction form defaults new dates to the selected month (today if current). Chart + side panel unchanged.
-- **No schema or env changes**; no data-layer changes (client-side filter over the `["transactions"]` cache).
-- Commit: `86dd32c` (plan) → feature commits through `15de129`.
-
-**Review fixes: local-midnight dates, pure ledger helper, Vitest (2026-08-05):**
-- New `lib/date.ts` (`dateInputToISO` / `isoToDateInput`) — `transaction-form.tsx` now stores dates at LOCAL midnight instead of UTC midnight, so a transaction dated the 1st no longer falls before the month window's local-midnight start in UTC-negative timezones.
-- Ledger balance math extracted from `transaction-list.tsx` into pure `lib/ledger.ts` (`buildLedger` + exported `LedgerRow`); the component now just calls it in its `rows` useMemo.
-- Added Vitest (`npm test`): `vitest.config.ts` (forces `TZ: America/New_York`, `@` alias), `lib/month.test.ts`, `lib/ledger.test.ts`. 10 tests passing; `npm run build` green.
-- Commit: after `61286c1`.
-
-**Category management in settings (2026-08-05):**
-- New "Categories" card on `/dashboard/settings` — users can create, edit, and delete their own custom transaction categories via a Dialog with a Lucide icon picker; seeded global categories are read-only.
-- `useCategories` extended from read-only to optimistic CRUD (`createCategory`/`updateCategory`/`deleteCategory`, mirrors `useAccounts`). New `components/categories/`: `category-icons.tsx` (CATEGORY_ICONS + CategoryIcon renderer with Tag fallback), `category-form.tsx` (Dialog), `category-list.tsx` (grouped list + AlertDialog delete). Icons are rendered in the side-panel by-category list and the transaction-form category dropdown (see the next entry).
-- **Schema change:** migration `004_category_manage.sql` (UPDATE + DELETE policies for own categories). **Must be applied to the remote DB** (dashboard SQL editor) — same as migrations 002/003.
-- **Settings roadmap (not yet built):** dark mode/theme, default account for new transactions, CSV export, display name, week/month-start preferences, MFA/session management, delete account.
-- Commit: feature commits on top of `b2fa6a4`.
-
-**Category icons in dashboard (2026-08-05):**
-- The side-panel "By category" list now renders each category's Lucide icon (from `categories.icon`) tinted to the donut slice color, replacing the plain colored dot; Uncategorized falls back to the Tag icon.
-- The transaction form's category dropdown shows fog-colored icons next to category names in both the open list and the closed trigger (via Base UI `SelectValue`'s function-child formatter).
-- Pure presentation change — no schema, no env, no data-layer changes, no new dependencies. Spec: `docs/superpowers/specs/2026-08-05-category-icons-dashboard-design.md`.
-- Commit: feature commits on top of `6a92015`.
-
-## 6. Agent Maintenance Guideline
-
-After completing any major task, feature, or database migration, **update the "Current Status & Recent Progress Log" section above** — add a dated entry describing what was done, note any schema/env changes, and confirm the commit. Keep this file as the single source of truth for project state so future agents can pick up where the last one left off.
+Do not append long chronological implementation logs. Prefer specs/plans in `docs/superpowers/` and git history for detailed narratives.

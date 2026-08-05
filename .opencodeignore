@@ -1,0 +1,39 @@
+# Dependency and build output directories
+node_modules/
+dist/
+build/
+.next/
+vendor/
+__pycache__/
+.venv/
+venv/
+out/
+
+# Lockfiles and generated framework/type artifacts
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+Cargo.lock
+poetry.lock
+tsconfig.tsbuildinfo
+next-env.d.ts
+types/database.ts
+
+# Superpowers/Subagent scratch artifacts. Read direct paths only when resuming SDD.
+.superpowers/sdd/review-*.diff
+.superpowers/sdd/task-*-brief.md
+.superpowers/sdd/task-*-report.md
+
+# Logs, databases, and temporary files
+*.log
+*.sqlite
+*.db
+.DS_Store
+
+# Large media/data files. Do not ignore all *.json: config JSON files are important.
+*.csv
+*.jsonl
+*.ndjson
+*.parquet
+*.zip
+*.tar.gz
