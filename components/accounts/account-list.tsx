@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAccounts } from "@/hooks/use-accounts";
 import { useTransactions } from "@/hooks/use-transactions";
+import { usePrimaryCurrency } from "@/hooks/use-primary-currency";
 import { formatCurrency } from "@/lib/format";
 import { AccountForm } from "./account-form";
 import { ACCOUNT_TYPE_LABELS } from "./account-types";
@@ -51,6 +52,7 @@ interface AccountWithBalance extends Account {
 export function AccountList() {
   const { data: accounts, isLoading, deleteAccount } = useAccounts();
   const { data: transactions } = useTransactions();
+  const { currency } = usePrimaryCurrency();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Account | null>(null);
@@ -105,7 +107,7 @@ export function AccountList() {
           <p className="mt-0.5 text-xs text-fog">
             {isLoading
               ? "Loading…"
-              : `${rows.length} account${rows.length === 1 ? "" : "s"} · ${formatCurrency(totalBalance)} total`}
+              : `${rows.length} account${rows.length === 1 ? "" : "s"} · ${formatCurrency(totalBalance, currency)} total`}
           </p>
         </div>
         <Button onClick={openCreate}>
@@ -172,7 +174,7 @@ export function AccountList() {
                       account.balance >= 0 ? "text-ink" : "text-ember"
                     }`}
                   >
-                    {formatCurrency(account.balance)}
+                    {formatCurrency(account.balance, account.currency)}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
