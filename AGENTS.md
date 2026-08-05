@@ -184,6 +184,13 @@ supabase db reset    # reset local DB and re-run migrations + seed
 - Added Vitest (`npm test`): `vitest.config.ts` (forces `TZ: America/New_York`, `@` alias), `lib/month.test.ts`, `lib/ledger.test.ts`. 10 tests passing; `npm run build` green.
 - Commit: after `61286c1`.
 
+**Category management in settings (2026-08-05):**
+- New "Categories" card on `/dashboard/settings` — users can create, edit, and delete their own custom transaction categories via a Dialog with a Lucide icon picker; seeded global categories are read-only.
+- `useCategories` extended from read-only to optimistic CRUD (`createCategory`/`updateCategory`/`deleteCategory`, mirrors `useAccounts`). New `components/categories/`: `category-icons.tsx` (CATEGORY_ICONS + CategoryIcon renderer with Tag fallback), `category-form.tsx` (Dialog), `category-list.tsx` (grouped list + AlertDialog delete). Icons are stored but not yet rendered in the transaction form / side panel (future change).
+- **Schema change:** migration `004_category_manage.sql` (UPDATE + DELETE policies for own categories). **Must be applied to the remote DB** (dashboard SQL editor) — same as migrations 002/003.
+- **Settings roadmap (not yet built):** dark mode/theme, default account for new transactions, CSV export, display name, week/month-start preferences, MFA/session management, delete account. Icons in transaction dropdown + side panel donut.
+- Commit: feature commits on top of `b2fa6a4`.
+
 ## 6. Agent Maintenance Guideline
 
 After completing any major task, feature, or database migration, **update the "Current Status & Recent Progress Log" section above** — add a dated entry describing what was done, note any schema/env changes, and confirm the commit. Keep this file as the single source of truth for project state so future agents can pick up where the last one left off.

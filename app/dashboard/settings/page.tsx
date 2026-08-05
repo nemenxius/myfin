@@ -24,6 +24,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { CURRENCIES } from "@/components/accounts/account-currencies";
+import { CategoryList } from "@/components/categories/category-list";
 
 const currencyOptions = CURRENCIES.map((c) => ({
   value: c.value,
@@ -191,6 +192,18 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       )}
+
+      <Card className="border-border/50 bg-white shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-base font-medium">Categories</CardTitle>
+          <CardDescription>
+            Custom categories appear in the transaction form and charts.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CategoryList />
+        </CardContent>
+      </Card>
 
       <Card className="border-border/50 bg-white shadow-sm">
         <CardHeader>
