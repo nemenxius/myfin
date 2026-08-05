@@ -41,6 +41,7 @@ interface TransactionFormProps {
 interface FormErrors {
   amount?: string;
   accountId?: string;
+  toAccountId?: string;
   date?: string;
 }
 
@@ -60,6 +61,7 @@ export function TransactionForm({
   const [type, setType] = useState<TransactionType>("Expense");
   const [amount, setAmount] = useState("");
   const [accountId, setAccountId] = useState("");
+  const [toAccountId, setToAccountId] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [date, setDate] = useState(today);
   const [description, setDescription] = useState("");
@@ -73,6 +75,7 @@ export function TransactionForm({
       setType(transaction.transaction_type as TransactionType);
       setAmount(String(Math.abs(transaction.amount)));
       setAccountId(transaction.account_id);
+      setToAccountId(transaction.to_account_id ?? "");
       setCategoryId(transaction.category_id ?? "");
       setDate(isoToDateInput(transaction.date));
       setDescription(transaction.description ?? "");
@@ -80,6 +83,7 @@ export function TransactionForm({
       setType("Expense");
       setAmount("");
       setAccountId(defaultAccountId ?? "");
+      setToAccountId("");
       setCategoryId("");
       setDate(defaultDate ?? today());
       setDescription("");
@@ -95,6 +99,13 @@ export function TransactionForm({
     }
     if (!accountId) {
       next.accountId = "Please select an account.";
+    }
+    if (type === "Transfer") {
+      if (!toAccountId) {
+        next.toAccountId = "Please select a destination account.";
+      } else if (toAccountId === accountId) {
+        next.toAccountId = "Destination account must differ from source account.";
+      }
     }
     if (!date) {
       next.date = "Please select a date.";
@@ -113,6 +124,7 @@ export function TransactionForm({
 
     const payload = {
       account_id: accountId,
+      to_account_id: type === "Transfer" ? toAccountId : null,
       category_id: categoryId || null,
       amount: signedAmount,
       transaction_type: type,
@@ -192,67 +204,125 @@ export function TransactionForm({
             </div>
           </div>
 
-          <div className="grid gap-1.5">
-            <Label htmlFor="account">Account</Label>
-            <Select
-              value={accountId}
-              onValueChange={(value) => value !== null && setAccountId(value)}
-              items={(accounts ?? []).map((account) => ({
-                value: account.id,
-                label: account.name,
-              }))}
-            >
-              <SelectTrigger id="account" className="w-full" aria-invalid={!!errors.accountId}>
-                <SelectValue placeholder="Select account" />
-              </SelectTrigger>
-              <SelectContent>
-                {(accounts ?? []).map((account) => (
-                  <SelectItem key={account.id} value={account.id}>
-                    {account.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.accountId && (
-              <p className="text-xs text-destructive">{errors.accountId}</p>
-            )}
-          </div>
+{type === "Transfer" ? (
+           <div className="grid grid-cols-2 gap-4">
+             <div className="grid gap-1.5">
+               <Label htmlFor="account-from">From</Label>
+               <Select
+                 value={accountId}
+                 onValueChange={(value) => value !== null && setAccountId(value)}
+                 items={(accounts ?? []).map((account) => ({
+                   value: account.id,
+                   label: account.name,
+                 }))}
+               >
+                 <SelectTrigger id="account-from" className="w-full" aria-invalid={!!errors.accountId}>
+                   <SelectValue placeholder="Select account" />
+                 </SelectTrigger>
+                 <SelectContent>
+                   {(accounts ?? []).map((account) => (
+                     <SelectItem key={account.id} value={account.id}>
+                       {account.name}
+                     </SelectItem>
+                   ))}
+                 </SelectContent>
+               </Select>
+               {errors.accountId && (
+                 <p className="text-xs text-destructive">{errors.accountId}</p>
+               )}
+             </div>
 
-          <div className="grid gap-1.5">
-            <Label htmlFor="category">Category</Label>
-            <Select
-              value={categoryId}
-              onValueChange={(value) => value !== null && setCategoryId(value)}
-              items={(categories ?? []).map((category) => ({
-                value: category.id,
-                label: category.name,
-              }))}
-            >
-              <SelectTrigger id="category" className="w-full">
-                <SelectValue>
-                  {(value) => {
-                    const cat = categories?.find((c) => c.id === value);
-                    return cat ? (
-                      <>
-                        <CategoryIcon slug={cat.icon} className="h-4 w-4 text-fog" />
-                        {cat.name}
-                      </>
-                    ) : (
-                      "Select category (optional)"
-                    );
-                  }}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {(categories ?? []).map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    <CategoryIcon slug={category.icon} className="h-4 w-4 text-fog" />
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+             <div className="grid gap-1.5">
+               <Label htmlFor="account-to">To</Label>
+               <Select
+                 value={toAccountId}
+                 onValueChange={(value) => value !== null && setToAccountId(value)}
+                 items={(accounts ?? []).filter((a) => a.id !== accountId).map((account) => ({
+                   value: account.id,
+                   label: account.name,
+                 }))}
+               >
+                 <SelectTrigger id="account-to" className="w-full" aria-invalid={!!errors.toAccountId}>
+                   <SelectValue placeholder="Select account" />
+                 </SelectTrigger>
+                 <SelectContent>
+                   {(accounts ?? []).filter((a) => a.id !== accountId).map((account) => (
+                     <SelectItem key={account.id} value={account.id}>
+                       {account.name}
+                     </SelectItem>
+                   ))}
+                 </SelectContent>
+               </Select>
+               {errors.toAccountId && (
+                 <p className="text-xs text-destructive">{errors.toAccountId}</p>
+               )}
+             </div>
+           </div>
+         ) : (
+           <div className="grid gap-1.5">
+             <Label htmlFor="account">Account</Label>
+             <Select
+               value={accountId}
+               onValueChange={(value) => value !== null && setAccountId(value)}
+               items={(accounts ?? []).map((account) => ({
+                 value: account.id,
+                 label: account.name,
+               }))}
+             >
+               <SelectTrigger id="account" className="w-full" aria-invalid={!!errors.accountId}>
+                 <SelectValue placeholder="Select account" />
+               </SelectTrigger>
+               <SelectContent>
+                 {(accounts ?? []).map((account) => (
+                   <SelectItem key={account.id} value={account.id}>
+                     {account.name}
+                   </SelectItem>
+                 ))}
+               </SelectContent>
+             </Select>
+             {errors.accountId && (
+               <p className="text-xs text-destructive">{errors.accountId}</p>
+             )}
+           </div>
+         )}
+
+{type !== "Transfer" && (
+           <div className="grid gap-1.5">
+             <Label htmlFor="category">Category</Label>
+             <Select
+               value={categoryId}
+               onValueChange={(value) => value !== null && setCategoryId(value)}
+               items={(categories ?? []).map((category) => ({
+                 value: category.id,
+                 label: category.name,
+               }))}
+             >
+               <SelectTrigger id="category" className="w-full">
+                 <SelectValue>
+                   {(value) => {
+                     const cat = categories?.find((c) => c.id === value);
+                     return cat ? (
+                       <>
+                         <CategoryIcon slug={cat.icon} className="h-4 w-4 text-fog" />
+                         {cat.name}
+                       </>
+                     ) : (
+                       "Select category (optional)"
+                     );
+                   }}
+                 </SelectValue>
+               </SelectTrigger>
+               <SelectContent>
+                 {(categories ?? []).map((category) => (
+                   <SelectItem key={category.id} value={category.id}>
+                     <CategoryIcon slug={category.icon} className="h-4 w-4 text-fog" />
+                     {category.name}
+                   </SelectItem>
+                 ))}
+               </SelectContent>
+             </Select>
+           </div>
+         )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-1.5">
