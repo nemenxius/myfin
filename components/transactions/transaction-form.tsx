@@ -8,8 +8,8 @@ import { useTransactions } from "@/hooks/use-transactions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CategoryIcon } from "@/components/categories/category-icons";
 import { Landmark } from "lucide-react";
+import { CategoryIcon } from "@/components/categories/category-icons";
 import {
   Dialog,
   DialogContent,
