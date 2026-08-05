@@ -1,12 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Plus } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
-import { Button } from "@/components/ui/button";
-import { AccountForm } from "@/components/accounts/account-form";
 import { UserMenu } from "@/components/auth/user-menu";
 import { cn } from "@/lib/utils";
 
@@ -17,7 +13,6 @@ const navItems = [
 
 export function DashboardHeader() {
   const pathname = usePathname();
-  const [formOpen, setFormOpen] = useState(false);
 
   return (
     <>
@@ -51,17 +46,9 @@ export function DashboardHeader() {
               })}
             </nav>
           </div>
-          <div className="flex items-center gap-2">
-            <Button onClick={() => setFormOpen(true)}>
-              <Plus />
-              Add Account
-            </Button>
-            <UserMenu />
-          </div>
+          <UserMenu />
         </div>
       </header>
-
-      <AccountForm open={formOpen} onOpenChange={setFormOpen} />
     </>
   );
 }
