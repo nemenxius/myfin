@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ACCOUNT_TYPES, type AccountType } from "./account-types";
+import { CURRENCIES } from "./account-currencies";
 import type { Tables } from "@/types/database";
 
 type Account = Tables<"accounts">;
@@ -81,6 +82,10 @@ export function AccountForm({
     setErrors(next);
     return Object.keys(next).length === 0;
   };
+
+  const currencyOptions = CURRENCIES.some((c) => c.value === currency)
+    ? CURRENCIES
+    : [...CURRENCIES, { value: currency, label: currency }];
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -183,13 +188,27 @@ export function AccountForm({
 
             <div className="grid gap-1.5">
               <Label htmlFor="currency">Currency</Label>
-              <Input
-                id="currency"
-                type="text"
-                placeholder="USD"
+              <Select
                 value={currency}
-                onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-              />
+                onValueChange={(value) =>
+                  value !== null && setCurrency(value)
+                }
+                items={currencyOptions.map((option) => ({
+                  value: option.value,
+                  label: option.label,
+                }))}
+              >
+                <SelectTrigger id="currency" className="w-full">
+                  <SelectValue placeholder="Select currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  {currencyOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
