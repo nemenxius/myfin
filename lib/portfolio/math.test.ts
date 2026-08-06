@@ -123,15 +123,25 @@ describe("buildHoldingValueSeries", () => {
     ]);
   });
 
-  it("reflects sells and stops emitting after a full sell", () => {
+  it("stops emitting after a full sell", () => {
     const txs = [
       datedBuy(10, 100, "2026-01-01T00:00:00Z"),
-      datedSell(4, 120, "2026-01-02T00:00:00Z"),
+      datedSell(10, 120, "2026-01-02T00:00:00Z"),
     ];
     expect(buildHoldingValueSeries(txs, history)).toEqual([
       { date: "2026-01-01", value: 1000 },
-      { date: "2026-01-02", value: 6 * 110 },
-      { date: "2026-01-03", value: 6 * 120 },
+    ]);
+  });
+
+  it("resumes emitting after a rebuy", () => {
+    const txs = [
+      datedBuy(10, 100, "2026-01-01T00:00:00Z"),
+      datedSell(10, 120, "2026-01-02T00:00:00Z"),
+      datedBuy(5, 110, "2026-01-03T00:00:00Z"),
+    ];
+    expect(buildHoldingValueSeries(txs, history)).toEqual([
+      { date: "2026-01-01", value: 1000 },
+      { date: "2026-01-03", value: 5 * 120 },
     ]);
   });
 
