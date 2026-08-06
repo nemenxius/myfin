@@ -1,4 +1,4 @@
-import type { MarketHistoryPoint, MarketQuote } from "../types";
+import type { HistoryRange, MarketHistoryPoint, MarketQuote } from "../types";
 
 interface YahooChartResponse {
   chart: {
@@ -52,7 +52,7 @@ export async function getYahooQuote(symbol: string): Promise<MarketQuote> {
 
 export async function getYahooHistory(
   symbol: string,
-  range: "3m" | "6m" | "1y"
+  range: HistoryRange
 ): Promise<MarketHistoryPoint[]> {
   const data = await fetchYahooChart(symbol, range, "1d");
   const result = data.chart?.result?.[0];

@@ -1,4 +1,4 @@
-import type { MarketHistoryPoint, MarketQuote } from "../types";
+import type { HistoryRange, MarketHistoryPoint, MarketQuote } from "../types";
 
 function apiKey(): string {
   const key = process.env.ALPHA_VANTAGE_API_KEY;
@@ -42,10 +42,13 @@ export async function getAlphaVantageQuote(symbol: string): Promise<MarketQuote>
 }
 
 export async function getAlphaVantageHistory(
-  symbol: string
+  symbol: string,
+  range?: HistoryRange
 ): Promise<MarketHistoryPoint[]> {
   const key = apiKey();
-  const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${encodeURIComponent(symbol)}&outputsize=compact&apikey=${key}`;
+  const outputsize =
+    range === "2y" || range === "5y" || range === "max" ? "full" : "compact";
+  const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${encodeURIComponent(symbol)}&outputsize=${outputsize}&apikey=${key}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Alpha Vantage returned ${res.status}`);
   const json = (await res.json()) as AlphaVantageHistoryResponse;

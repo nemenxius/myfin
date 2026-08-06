@@ -1,4 +1,4 @@
-import type { MarketHistoryPoint, MarketQuote } from "../types";
+import type { HistoryRange, MarketHistoryPoint, MarketQuote } from "../types";
 
 const COINGECKO_ID_MAP: Record<string, string> = {
   BTC: "bitcoin",
@@ -53,11 +53,22 @@ export async function getCoinGeckoQuote(symbol: string): Promise<MarketQuote> {
 
 export async function getCoinGeckoHistory(
   symbol: string,
-  range: "3m" | "6m" | "1y"
+  range: HistoryRange
 ): Promise<MarketHistoryPoint[]> {
   const key = apiKey();
   const id = coinId(symbol);
-  const days = range === "3m" ? 90 : range === "6m" ? 182 : 365;
+  const days =
+    range === "3m"
+      ? 90
+      : range === "6m"
+        ? 182
+        : range === "1y"
+          ? 365
+          : range === "2y"
+            ? 730
+            : range === "5y"
+              ? 1825
+              : "max";
   const url = `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=${days}`;
   const res = await fetch(url, {
     headers: { accept: "application/json", "x-cg-demo-api-key": key },

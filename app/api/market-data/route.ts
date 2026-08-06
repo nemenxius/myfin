@@ -5,7 +5,7 @@ import { getHistory } from "@/lib/market-data/history";
 import { getSymbolSuggestions } from "@/lib/market-data/search";
 import type { HistoryRange } from "@/lib/market-data/types";
 
-const RANGES: HistoryRange[] = ["3m", "6m", "1y"];
+const RANGES: HistoryRange[] = ["3m", "6m", "1y", "2y", "5y", "max"];
 const QUOTE_MAX_AGE = 60;
 const HISTORY_MAX_AGE = 300;
 

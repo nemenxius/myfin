@@ -12,7 +12,7 @@ export interface MarketHistoryPoint {
   close: number;
 }
 
-export type HistoryRange = "3m" | "6m" | "1y";
+export type HistoryRange = "3m" | "6m" | "1y" | "2y" | "5y" | "max";
 
 export interface MarketSymbolSuggestion {
   symbol: string;

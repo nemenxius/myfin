@@ -17,7 +17,7 @@ export async function getHistory(
 
   const providers = [
     () => getYahooHistory(symbol, range),
-    () => getAlphaVantageHistory(symbol),
+    () => getAlphaVantageHistory(symbol, range),
     () => getCoinGeckoHistory(symbol, range),
   ];
 
