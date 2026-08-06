@@ -80,16 +80,22 @@ export type Database = {
       }
       profiles: {
         Row: {
+          default_account_id: string | null
+          default_category_id: string | null
           display_currency: string | null
           id: string
           updated_at: string | null
         }
         Insert: {
+          default_account_id?: string | null
+          default_category_id?: string | null
           display_currency?: string | null
           id: string
           updated_at?: string | null
         }
         Update: {
+          default_account_id?: string | null
+          default_category_id?: string | null
           display_currency?: string | null
           id?: string
           updated_at?: string | null

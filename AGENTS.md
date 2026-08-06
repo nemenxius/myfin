@@ -129,6 +129,8 @@ Migration state to preserve:
 - `002_auto_create_profiles.sql`: backfill + auth trigger for profile rows.
 - `003_profile_display_currency.sql`: nullable `profiles.display_currency` + update policy.
 - `004_category_manage.sql`: update/delete policies for own custom categories. User confirmed this was run remotely on 2026-08-05.
+- `005_add_to_account_id.sql`: `transactions.to_account_id` + transfer RLS policies.
+- `006_profile_defaults.sql`: nullable `profiles.default_account_id` / `default_category_id` for prefilling new transactions. Not yet run remotely; apply via Supabase dashboard SQL editor.
 
 After schema changes, regenerate types with:
 
@@ -141,7 +143,8 @@ supabase gen types typescript --project-id <PROJECT_ID> --schema public > types/
 - Landing page and full auth flow are implemented: email + Google signup, email confirmation, password reset, logout, onboarding, settings page.
 - Dashboard supports `?month=YYYY-MM`; month-aware cards and ledger use `lib/month.ts`, `lib/date.ts`, and `lib/ledger.ts`.
 - Accounts CRUD lives under `/dashboard/accounts`.
-- Transactions support create/edit/delete with optimistic updates and month-default dates.
+- Transactions support create/edit/delete with optimistic updates and month-default dates. New transactions prefill account/category from `profiles.default_account_id` / `default_category_id` (optional; both unset means no default).
+- Settings (`/dashboard/settings`) includes a Defaults card to set/unset the default account and default category.
 - Categories are managed in `/dashboard/settings`: global categories are read-only; users can create/edit/delete custom categories with a Lucide icon picker.
 - Category icons render in the dashboard side-panel by-category list and in the transaction form dropdown.
 - The side-panel donut chart and its top-3 category list are hover-synced via a shared `activeIndex` state in `side-panel.tsx`. Recharts 3 note: per-`Cell` geometry props (`outerRadius`, etc.) no longer exist; per-slice active styling uses the `Pie` `shape` prop rendering a `Sector` (Cell carries only `fill`).
@@ -154,7 +157,7 @@ supabase gen types typescript --project-id <PROJECT_ID> --schema public > types/
 - Add UI feedback for failed category/account delete mutations instead of silent optimistic rollback.
 - Consider typing category/account update inputs to exclude `user_id`.
 - Consider a small icon-map drift test for `CATEGORY_ICONS` vs the internal icon map.
-- Settings roadmap: dark mode/theme, default account for new transactions, CSV export, display name, week/month-start preferences, MFA/session management, delete account.
+- Settings roadmap: dark mode/theme, CSV export, display name, week/month-start preferences, MFA/session management, delete account.
 - Optional tooling cleanup: replace broken `npm run lint` script or add an ESLint config.
 - Optional Vitest cleanup: remove the non-failing native config warning by moving config to `.mjs` or setting package/module configuration intentionally.
 

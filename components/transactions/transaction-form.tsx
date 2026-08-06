@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAccounts } from "@/hooks/use-accounts";
 import { useCategories } from "@/hooks/use-categories";
+import { useProfile } from "@/hooks/use-profile";
 import { useTransactions } from "@/hooks/use-transactions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +57,7 @@ export function TransactionForm({
 }: TransactionFormProps) {
   const { data: accounts, isLoading: accountsLoading } = useAccounts();
   const { data: categories } = useCategories();
+  const { data: profile } = useProfile();
   const { addTransaction, updateTransaction } = useTransactions();
 
   const [type, setType] = useState<TransactionType>("Expense");
@@ -82,13 +84,13 @@ export function TransactionForm({
     } else {
       setType("Expense");
       setAmount("");
-      setAccountId(defaultAccountId ?? "");
+      setAccountId(defaultAccountId ?? profile?.default_account_id ?? "");
       setToAccountId("");
-      setCategoryId("");
+      setCategoryId(profile?.default_category_id ?? "");
       setDate(defaultDate ?? today());
       setDescription("");
     }
-  }, [open, transaction, defaultAccountId, defaultDate]);
+  }, [open, transaction, defaultAccountId, defaultDate, profile?.default_account_id, profile?.default_category_id]);
 
   const validate = (): boolean => {
     const next: FormErrors = {};

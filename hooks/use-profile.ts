@@ -45,5 +45,32 @@ export function useProfile() {
     },
   });
 
-  return { ...query, updateDisplayCurrency };
+  const updateDefaults = useMutation({
+    mutationFn: async ({
+      default_account_id,
+      default_category_id,
+    }: {
+      default_account_id: string | null;
+      default_category_id: string | null;
+    }) => {
+      if (!userId) throw new Error("Not authenticated");
+      const { data, error } = await supabaseClient
+        .from("profiles")
+        .update({
+          default_account_id,
+          default_category_id,
+        })
+        .eq("id", userId)
+        .select("id");
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("Profile not found");
+      }
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["profile", userId] });
+    },
+  });
+
+  return { ...query, updateDisplayCurrency, updateDefaults };
 }

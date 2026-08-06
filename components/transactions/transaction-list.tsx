@@ -117,7 +117,7 @@ export function TransactionList({ month }: { month: string }) {
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle className="font-display text-xl font-medium text-ink">
-            Ledger
+            This Month Activity
           </CardTitle>
           <p className="mt-0.5 text-xs text-fog">
             {monthName} — every movement, with the balance after each line.

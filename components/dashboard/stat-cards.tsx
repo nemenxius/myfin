@@ -6,7 +6,6 @@ import {
   PiggyBank,
   TrendingDown,
   TrendingUp,
-  Wallet,
   Percent,
 } from "lucide-react";
 import { useAccounts } from "@/hooks/use-accounts";
@@ -23,14 +22,6 @@ export function StatCards({ month }: { month: string }) {
 
   const stats = useMemo(() => {
     const all = transactions ?? [];
-    const income = all
-      .filter((t) => t.amount > 0 && t.transaction_type !== "Transfer")
-      .reduce((s, t) => s + t.amount, 0);
-    const expense = all
-      .filter((t) => t.amount < 0 && t.transaction_type !== "Transfer")
-      .reduce((s, t) => s + Math.abs(t.amount), 0);
-    const net = income - expense;
-
     const { start, end } = monthWindow(month);
     const startTs = start.getTime();
     const endTs = end.getTime();
@@ -71,7 +62,6 @@ export function StatCards({ month }: { month: string }) {
     );
 
     return {
-      net,
       savingsRate,
       monthIncome,
       monthExpense,
@@ -83,13 +73,6 @@ export function StatCards({ month }: { month: string }) {
   const monthName = monthLabel(month);
 
   const cards: ComponentProps<typeof StatCard>[] = [
-    {
-      label: "Net position",
-      value: formatCurrency(stats.net, currency),
-      icon: Wallet,
-      delta: stats.net >= 0 ? "Net positive" : "Net negative",
-      deltaTone: stats.net >= 0 ? "positive" : "negative",
-    },
     {
       label: "Savings rate",
       value: `${stats.savingsRate.toFixed(1)}%`,

@@ -73,7 +73,7 @@ export function SpendingChart({ month }: { month: string }) {
     <Card className="h-full border-border/50 bg-white shadow-sm">
       <CardHeader>
         <CardTitle className="font-display text-base font-medium text-ink">
-          Daily spending
+          Monthly spending
         </CardTitle>
       </CardHeader>
       <CardContent className="flex min-h-0 flex-1 flex-col">
