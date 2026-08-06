@@ -168,7 +168,7 @@ export function useHoldings() {
         holdingHistory: historyBySymbol.get(holding.symbol) ?? [],
       };
     });
-  }, [dataQuery.data, quoteBySymbol]);
+  }, [dataQuery.data, quoteBySymbol, historyBySymbol]);
 
   const totals = useMemo<PortfolioTotals>(() => {
     const totalValue = holdings.reduce((sum, h) => sum + h.currentValue, 0);
