@@ -161,6 +161,10 @@ supabase gen types typescript --project-id <PROJECT_ID> --schema public > types/
 - Portfolio holdings auto-detect their trading currency from the live quote when added (e.g. `EUNL.DE` → EUR), falling back to the profile display currency if the quote can't be fetched. Existing holdings created before this change may still carry the `USD` default.
 - Adding a holding shows a live symbol-search dropdown (Yahoo lookup via `action=search`) that fills symbol, name, price, and currency on select; search failures degrade silently to manual typing.
 - Currency formatting is currency-aware and guarded against invalid currency codes; aggregate multi-currency totals still sum raw values and label them in primary currency. There is no FX conversion.
+- The Portfolio Performance chart and each holding's price chart are transaction-aware:
+  value series reflect actual buy/sell dates (starting at the first purchase), holding
+  charts start at that holding's first transaction, and price history is fetched at a
+  per-symbol range (`3m`/`6m`/`1y`/`2y`/`5y`/`max`) derived from the earliest transaction.
 - Proxy migration is complete: `proxy.ts` replaced deprecated `middleware.ts`. Restart dev servers if the old deprecation warning persists.
 
 ## 7. Known Follow-Ups
