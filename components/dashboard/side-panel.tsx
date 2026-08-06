@@ -88,7 +88,7 @@ export function SidePanel({ month }: { month: string }) {
                             cx={props.cx}
                             cy={props.cy}
                             innerRadius={props.innerRadius}
-                            outerRadius={isActive ? 56 : 52}
+                            outerRadius={props.index === activeIndex ? 56 : 52}
                             startAngle={props.startAngle}
                             endAngle={props.endAngle}
                             cornerRadius={props.cornerRadius}
