@@ -5,6 +5,7 @@ import {
   useHoldings,
   type HoldingWithCalculations,
 } from "@/hooks/use-portfolio";
+import { usePrimaryCurrency } from "@/hooks/use-primary-currency";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,6 +50,19 @@ const nowParts = () => {
   return { date: isoToDateInput(iso), time: isoToTimeInput(iso) };
 };
 
+async function fetchDetectedCurrency(symbol: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `/api/market-data?symbol=${encodeURIComponent(symbol)}&action=quote`
+    );
+    if (!res.ok) return null;
+    const quote = (await res.json()) as MarketQuote;
+    return quote.currency ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function HoldingForm({
   open,
   onOpenChange,
@@ -58,6 +72,7 @@ export function HoldingForm({
 }: HoldingFormProps) {
   const { createHoldingWithTransaction, addHoldingTransaction, updateHoldingTransaction } =
     useHoldings();
+  const { currency: profileCurrency } = usePrimaryCurrency();
 
   const isCreating = !holding;
   const isEditingTx = Boolean(editingTransaction);
@@ -75,11 +90,13 @@ export function HoldingForm({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [priceLoading, setPriceLoading] = useState(false);
   const priceFetchRef = useRef(0);
+  const [detectedCurrency, setDetectedCurrency] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setErrors({});
     setSubmitError(null);
+    setDetectedCurrency(null);
     setType("buy");
     setCommission("0");
     const parts = nowParts();
@@ -129,6 +146,7 @@ export function HoldingForm({
         if (res.ok && requestId === priceFetchRef.current) {
           const quote = (await res.json()) as MarketQuote;
           if (quote.currentPrice != null) setPrice(String(quote.currentPrice));
+          if (quote.currency) setDetectedCurrency(quote.currency);
         }
       } catch {
         // live price is best-effort; keep the user-entered price
@@ -197,12 +215,16 @@ export function HoldingForm({
           transaction: payload,
         });
       } else {
+        const symbolTrimmed = symbol.trim().toUpperCase();
         await createHoldingWithTransaction.mutateAsync({
           holding: {
-            symbol: symbol.trim().toUpperCase(),
+            symbol: symbolTrimmed,
             name: name.trim() || null,
             asset_type: assetType,
-            currency: "USD",
+            currency:
+              detectedCurrency ??
+              (await fetchDetectedCurrency(symbolTrimmed)) ??
+              profileCurrency,
           },
           transaction: payload,
         });
@@ -245,6 +267,11 @@ export function HoldingForm({
                 />
                 {errors.symbol && (
                   <p className="text-xs text-destructive">{errors.symbol}</p>
+                )}
+                {!errors.symbol && (
+                  <p className="text-xs text-fog">
+                    Currency: {detectedCurrency ?? profileCurrency}
+                  </p>
                 )}
               </div>
               <div className="grid gap-1.5">
