@@ -158,6 +158,7 @@ supabase gen types typescript --project-id <PROJECT_ID> --schema public > types/
 - Categories are managed in `/dashboard/settings`: global categories are read-only; users can create/edit/delete custom categories with a Lucide icon picker.
 - Category icons render in the dashboard side-panel by-category list and in the transaction form dropdown.
 - The side-panel donut chart and its top-3 category list are hover-synced via a shared `activeIndex` state in `side-panel.tsx`. Recharts 3 note: per-`Cell` geometry props (`outerRadius`, etc.) no longer exist; per-slice active styling uses the `Pie` `shape` prop rendering a `Sector` (Cell carries only `fill`).
+- Portfolio holdings auto-detect their trading currency from the live quote when added (e.g. `EUNL.DE` → EUR), falling back to the profile display currency if the quote can't be fetched. Existing holdings created before this change may still carry the `USD` default.
 - Currency formatting is currency-aware and guarded against invalid currency codes; aggregate multi-currency totals still sum raw values and label them in primary currency. There is no FX conversion.
 - Proxy migration is complete: `proxy.ts` replaced deprecated `middleware.ts`. Restart dev servers if the old deprecation warning persists.
 
@@ -172,6 +173,7 @@ supabase gen types typescript --project-id <PROJECT_ID> --schema public > types/
 - Optional Vitest cleanup: remove the non-failing native config warning by moving config to `.mjs` or setting package/module configuration intentionally.
 - Portfolio: holdings are deleted when a user deletes the holding (cascades transactions); consider warning before deletion (UI already confirms).
 - Portfolio: the portfolio chart multiplies each holding's current total shares across its entire history range (spec-mandated model; do not "fix" without updating the spec).
+- Portfolio: holdings created before currency auto-detection may have the wrong stored `currency` (USD default); no backfill was built. Consider a per-holding currency edit action.
 - Market data: Yahoo rate limits; in-memory cache is per server instance. If multi-instance, consider a shared cache.
 
 ## 8. Token-Saving / Ignore Guidance
