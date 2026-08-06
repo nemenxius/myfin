@@ -163,7 +163,7 @@ export function useHoldings() {
       const earliest = rangeBySymbol.get(symbol);
       const range = earliest ? rangeForDate(earliest) : "1y";
       return {
-        queryKey: ["portfolio", "history", symbol],
+        queryKey: ["portfolio", "history", symbol, range],
         queryFn: () => fetchHistory(symbol, range),
         enabled: symbols.length > 0,
         staleTime: 300_000,
