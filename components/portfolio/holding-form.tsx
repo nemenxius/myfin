@@ -134,6 +134,7 @@ export function HoldingForm({
 
   useEffect(() => {
     if (!open || !isCreating) return;
+    setDetectedCurrency(null);
     const trimmed = symbol.trim().toUpperCase();
     if (!trimmed) return;
     const requestId = ++priceFetchRef.current;
