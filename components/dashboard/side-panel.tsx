@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
-import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
+import { useMemo, useState } from "react";
+import { Cell, Pie, PieChart, ResponsiveContainer, Sector } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCategories } from "@/hooks/use-categories";
 import { usePrimaryCurrency } from "@/hooks/use-primary-currency";
@@ -17,6 +17,7 @@ export function SidePanel({ month }: { month: string }) {
   const { data: transactions, isLoading } = useTransactions();
   const { data: categories } = useCategories();
   const { currency } = usePrimaryCurrency();
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   const { monthSpend, byCategory } = useMemo(() => {
     const all = transactions ?? [];
@@ -77,6 +78,26 @@ export function SidePanel({ month }: { month: string }) {
                       outerRadius={52}
                       paddingAngle={2}
                       strokeWidth={0}
+                      onMouseEnter={(_, index) => setActiveIndex(index)}
+                      onMouseLeave={() => setActiveIndex(null)}
+                      shape={(props) => {
+                        const isActive =
+                          activeIndex === null || props.index === activeIndex;
+                        return (
+                          <Sector
+                            cx={props.cx}
+                            cy={props.cy}
+                            innerRadius={props.innerRadius}
+                            outerRadius={isActive ? 56 : 52}
+                            startAngle={props.startAngle}
+                            endAngle={props.endAngle}
+                            cornerRadius={props.cornerRadius}
+                            fill={props.fill}
+                            opacity={isActive ? 1 : 0.35}
+                            className="transition-opacity duration-200"
+                          />
+                        );
+                      }}
                     >
                       {byCategory.map((entry, i) => (
                         <Cell
