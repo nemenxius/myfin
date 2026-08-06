@@ -42,7 +42,7 @@ export function HoldingDetail({ holdingId }: { holdingId: string }) {
   }
 
   const hasQuote = holding.quote !== null;
-  const history = holding.holdingHistory ?? [];
+  const history = holding.chartHistory ?? [];
 
   return (
     <div className="space-y-6">
