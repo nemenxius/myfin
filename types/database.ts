@@ -102,6 +102,101 @@ export type Database = {
         }
         Relationships: []
       }
+      portfolio_holdings: {
+        Row: {
+          asset_type: string
+          created_at: string
+          currency: string
+          id: string
+          name: string | null
+          symbol: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asset_type: string
+          created_at?: string
+          currency?: string
+          id?: string
+          name?: string | null
+          symbol: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asset_type?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          name?: string | null
+          symbol?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_holdings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      holding_transactions: {
+        Row: {
+          commission: number
+          created_at: string
+          holding_id: string
+          id: string
+          notes: string | null
+          price_per_share: number
+          shares: number
+          transacted_at: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          commission?: number
+          created_at?: string
+          holding_id: string
+          id?: string
+          notes?: string | null
+          price_per_share: number
+          shares: number
+          transacted_at?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          commission?: number
+          created_at?: string
+          holding_id?: string
+          id?: string
+          notes?: string | null
+          price_per_share?: number
+          shares?: number
+          transacted_at?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "holding_transactions_holding_id_fkey"
+            columns: ["holding_id"]
+            isOneToOne: false
+            referencedRelation: "portfolio_holdings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "holding_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           account_id: string
