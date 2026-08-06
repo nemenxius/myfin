@@ -13,3 +13,9 @@ export interface MarketHistoryPoint {
 }
 
 export type HistoryRange = "3m" | "6m" | "1y";
+
+export interface MarketSymbolSuggestion {
+  symbol: string;
+  name: string | null;
+  exchange: string | null;
+}
