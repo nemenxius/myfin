@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/dashboard", label: "Overview" },
   { href: "/dashboard/accounts", label: "Accounts" },
+  { href: "/dashboard/portfolio", label: "Portfolio" },
 ];
 
 export function DashboardHeader() {
