@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Autocomplete } from "@base-ui/react/autocomplete";
 import {
   useHoldings,
   type HoldingWithCalculations,
@@ -26,7 +27,7 @@ import {
 import { ASSET_TYPES, HOLDING_TRANSACTION_TYPES } from "./portfolio-types";
 import { dateInputToISO, isoToDateInput, isoToTimeInput } from "@/lib/date";
 import type { Tables } from "@/types/database";
-import type { MarketQuote } from "@/lib/market-data/types";
+import type { MarketQuote, MarketSymbolSuggestion } from "@/lib/market-data/types";
 
 type HoldingTransaction = Tables<"holding_transactions">;
 
@@ -91,12 +92,18 @@ export function HoldingForm({
   const [priceLoading, setPriceLoading] = useState(false);
   const priceFetchRef = useRef(0);
   const [detectedCurrency, setDetectedCurrency] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<MarketSymbolSuggestion[]>([]);
+  const [showEmpty, setShowEmpty] = useState(false);
+  const searchFetchRef = useRef(0);
+  const skipNextSearchRef = useRef(false);
 
   useEffect(() => {
     if (!open) return;
     setErrors({});
     setSubmitError(null);
     setDetectedCurrency(null);
+    setSuggestions([]);
+    setShowEmpty(false);
     setType("buy");
     setCommission("0");
     const parts = nowParts();
@@ -158,6 +165,34 @@ export function HoldingForm({
     return () => clearTimeout(timer);
   }, [symbol, isCreating, open]);
 
+  useEffect(() => {
+    if (!open || !isCreating) return;
+    setSuggestions([]);
+    setShowEmpty(false);
+    const trimmed = symbol.trim();
+    if (trimmed.length < 2) return;
+    if (skipNextSearchRef.current) {
+      skipNextSearchRef.current = false;
+      return;
+    }
+    const requestId = ++searchFetchRef.current;
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/market-data?action=search&q=${encodeURIComponent(trimmed)}`
+        );
+        if (!res.ok || requestId !== searchFetchRef.current) return;
+        const data = (await res.json()) as MarketSymbolSuggestion[];
+        if (requestId !== searchFetchRef.current) return;
+        setSuggestions(data);
+        if (data.length === 0) setShowEmpty(true);
+      } catch {
+        // search is best-effort; manual typing stays usable
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [symbol, isCreating, open]);
+
   const validate = (): boolean => {
     const next: FormErrors = {};
     const numericShares = Number(shares);
@@ -188,6 +223,14 @@ export function HoldingForm({
 
     setErrors(next);
     return Object.keys(next).length === 0;
+  };
+
+  const handleSelectSuggestion = (item: MarketSymbolSuggestion) => {
+    skipNextSearchRef.current = true;
+    setSymbol(item.symbol);
+    setName(item.name ?? "");
+    setSuggestions([]);
+    setShowEmpty(false);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -258,14 +301,56 @@ export function HoldingForm({
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-1.5">
                 <Label htmlFor="symbol">Symbol</Label>
-                <Input
-                  id="symbol"
-                  type="text"
-                  placeholder="AAPL"
+                <Autocomplete.Root
+                  items={suggestions}
                   value={symbol}
-                  onChange={(e) => setSymbol(e.target.value)}
-                  aria-invalid={!!errors.symbol}
-                />
+                  onValueChange={(next) => setSymbol(next.toUpperCase())}
+                  itemToStringValue={(item) => item.symbol}
+                  mode="none"
+                  autoHighlight
+                >
+                  <Autocomplete.Input
+                    id="symbol"
+                    type="text"
+                    placeholder="AAPL"
+                    autoComplete="off"
+                    aria-invalid={!!errors.symbol}
+                    className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30"
+                  />
+                  <Autocomplete.Portal hidden={suggestions.length === 0 && !showEmpty}>
+                    <Autocomplete.Positioner
+                      sideOffset={4}
+                      align="start"
+                      className="isolate z-50"
+                    >
+                      <Autocomplete.Popup className="relative z-50 max-h-(--available-height) w-(--anchor-width) min-w-36 origin-(--transform-origin) overflow-y-auto rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95">
+                        <Autocomplete.Empty>
+                          <div className="px-2 py-1.5 text-sm text-fog">No matches</div>
+                        </Autocomplete.Empty>
+                        <Autocomplete.List>
+                          {(item: MarketSymbolSuggestion) => (
+                            <Autocomplete.Item
+                              key={item.symbol}
+                              value={item}
+                              onClick={() => handleSelectSuggestion(item)}
+                              className="relative flex w-full cursor-default items-center gap-2 rounded-md px-1.5 py-1 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground data-highlighted:bg-accent data-highlighted:text-accent-foreground"
+                            >
+                              <span className="font-mono font-medium">{item.symbol}</span>
+                              <span className="truncate text-muted-foreground">
+                                {item.name}
+                              </span>
+                              {item.exchange && (
+                                <span className="ml-auto shrink-0 text-xs text-fog">
+                                  {item.exchange}
+                                </span>
+                              )}
+                            </Autocomplete.Item>
+                          )}
+                        </Autocomplete.List>
+                      </Autocomplete.Popup>
+                    </Autocomplete.Positioner>
+                  </Autocomplete.Portal>
+                </Autocomplete.Root>
                 {errors.symbol && (
                   <p className="text-xs text-destructive">{errors.symbol}</p>
                 )}
