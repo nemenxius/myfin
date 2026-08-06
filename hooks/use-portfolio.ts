@@ -10,9 +10,12 @@ import {
 import { supabaseClient } from "@/lib/supabase/client";
 import type { Tables, TablesInsert } from "@/types/database";
 import {
+  buildHoldingValueSeries,
   combineValueSeries,
   computeHoldingCalculations,
+  rangeForDate,
   type CalcTransaction,
+  type DatedCalcTransaction,
   type ValuePoint,
 } from "@/lib/portfolio/math";
 import type { MarketHistoryPoint, MarketQuote } from "@/lib/market-data/types";
@@ -25,6 +28,7 @@ type HoldingTransactionInsert = TablesInsert<"holding_transactions">;
 export interface HoldingWithCalculations extends Holding {
   transactions: HoldingTransaction[];
   holdingHistory: MarketHistoryPoint[];
+  chartHistory: MarketHistoryPoint[];
   totalShares: number;
   avgPrice: number;
   costBasis: number;
@@ -106,6 +110,18 @@ function toCalcTransactions(
   }));
 }
 
+function toDatedCalcTransactions(
+  transactions: HoldingTransaction[]
+): DatedCalcTransaction[] {
+  return transactions.map((t) => ({
+    type: t.type,
+    shares: t.shares,
+    pricePerShare: t.price_per_share,
+    commission: t.commission,
+    date: t.transacted_at,
+  }));
+}
+
 export function useHoldings() {
   const queryClient = useQueryClient();
   const dataQuery = useQuery({ queryKey: dataKey, queryFn: fetchPortfolioData });
@@ -114,6 +130,23 @@ export function useHoldings() {
     () => Array.from(new Set((dataQuery.data?.holdings ?? []).map((h) => h.symbol))),
     [dataQuery.data?.holdings]
   );
+
+  const rangeBySymbol = useMemo(() => {
+    const data = dataQuery.data;
+    const earliest = new Map<string, string>();
+    if (!data) return earliest;
+    const symbolById = new Map(
+      data.holdings.map((h) => [h.id, h.symbol] as const)
+    );
+    for (const t of data.transactions) {
+      const symbol = symbolById.get(t.holding_id);
+      if (!symbol) continue;
+      const day = t.transacted_at.slice(0, 10);
+      const current = earliest.get(symbol);
+      if (current === undefined || day < current) earliest.set(symbol, day);
+    }
+    return earliest;
+  }, [dataQuery.data]);
 
   const quotes = useQueries({
     queries: symbols.map((symbol) => ({
@@ -126,13 +159,17 @@ export function useHoldings() {
   });
 
   const histories = useQueries({
-    queries: symbols.map((symbol) => ({
-      queryKey: ["portfolio", "history", symbol],
-      queryFn: () => fetchHistory(symbol, "1y"),
-      enabled: symbols.length > 0,
-      staleTime: 300_000,
-      retry: 1,
-    })),
+    queries: symbols.map((symbol) => {
+      const earliest = rangeBySymbol.get(symbol);
+      const range = earliest ? rangeForDate(earliest) : "1y";
+      return {
+        queryKey: ["portfolio", "history", symbol],
+        queryFn: () => fetchHistory(symbol, range),
+        enabled: symbols.length > 0,
+        staleTime: 300_000,
+        retry: 1,
+      };
+    }),
   });
 
   const quoteBySymbol = useMemo(() => {
@@ -160,12 +197,20 @@ export function useHoldings() {
         quote?.currentPrice ?? null,
         quote?.previousClose ?? null
       );
+      const holdingHistory = historyBySymbol.get(holding.symbol) ?? [];
+      const firstTxDay = transactions.length
+        ? transactions.map((t) => t.transacted_at.slice(0, 10)).sort()[0]
+        : null;
+      const chartHistory = firstTxDay
+        ? holdingHistory.filter((p) => p.date.slice(0, 10) >= firstTxDay)
+        : [];
       return {
         ...holding,
         transactions,
         ...calc,
         quote,
-        holdingHistory: historyBySymbol.get(holding.symbol) ?? [],
+        holdingHistory,
+        chartHistory,
       };
     });
   }, [dataQuery.data, quoteBySymbol, historyBySymbol]);
@@ -188,14 +233,14 @@ export function useHoldings() {
   }, [holdings]);
 
   const valueSeries = useMemo<ValuePoint[]>(() => {
-    const sharesBySymbol: Record<string, number> = {};
-    for (const h of holdings) sharesBySymbol[h.symbol] = h.totalShares;
     return combineValueSeries(
       holdings.map((h) => ({
         symbol: h.symbol,
-        points: historyBySymbol.get(h.symbol) ?? [],
-      })),
-      sharesBySymbol
+        points: buildHoldingValueSeries(
+          toDatedCalcTransactions(h.transactions),
+          historyBySymbol.get(h.symbol) ?? []
+        ),
+      }))
     );
   }, [holdings, historyBySymbol]);
 
