@@ -230,11 +230,11 @@ export function HoldingForm({
   };
 
   const handleSelectSuggestion = (item: MarketSymbolSuggestion) => {
-    skipNextSearchRef.current = true;
-    setSymbol(item.symbol);
     setName(item.name ?? "");
     setSuggestions([]);
     setShowEmpty(false);
+    skipNextSearchRef.current = item.symbol !== symbol.trim().toUpperCase();
+    setSymbol(item.symbol);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {

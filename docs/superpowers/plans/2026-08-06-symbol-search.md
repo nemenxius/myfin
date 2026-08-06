@@ -1,6 +1,6 @@
 # Symbol Search Autocomplete Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Add a live-search dropdown to the holding form's Symbol field so users can discover and select tickers (stocks, ETFs, crypto) while typing.
 
@@ -33,7 +33,7 @@
   - `interface MarketSymbolSuggestion { symbol: string; name: string | null; exchange: string | null }` in `lib/market-data/types.ts`
   - `function parseYahooSearchResponse(data: unknown): MarketSymbolSuggestion[]` in `lib/market-data/search.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `lib/market-data/search.test.ts`:
 
@@ -90,12 +90,12 @@ describe("parseYahooSearchResponse", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run lib/market-data/search.test.ts`
 Expected: FAIL — `Failed to resolve import "./search"` (module does not exist yet).
 
-- [ ] **Step 3: Add the type**
+- [x] **Step 3: Add the type**
 
 Append to `lib/market-data/types.ts`:
 
@@ -107,7 +107,7 @@ export interface MarketSymbolSuggestion {
 }
 ```
 
-- [ ] **Step 4: Write the minimal parser**
+- [x] **Step 4: Write the minimal parser**
 
 Create `lib/market-data/search.ts`:
 
@@ -150,17 +150,17 @@ export function parseYahooSearchResponse(
 }
 ```
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x] **Step 5: Run test to verify it passes**
 
 Run: `npx vitest run lib/market-data/search.test.ts`
 Expected: PASS — 4 tests.
 
-- [ ] **Step 6: Typecheck**
+- [x] **Step 6: Typecheck**
 
 Run: `npx tsc --noEmit`
 Expected: no errors.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add lib/market-data/types.ts lib/market-data/search.ts lib/market-data/search.test.ts
@@ -185,7 +185,7 @@ git commit -m "feat: add symbol suggestion type and Yahoo search parser"
   - `cacheKey` kind union widened to `"quote" | "history" | "search"`.
   - `GET /api/market-data?action=search&q=<query>` handler in `app/api/market-data/route.ts`.
 
-- [ ] **Step 1: Widen the cache kind**
+- [x] **Step 1: Widen the cache kind**
 
 In `lib/market-data/cache.ts`, change the `cacheKey` signature:
 
@@ -197,7 +197,7 @@ export function cacheKey(
 ): string {
 ```
 
-- [ ] **Step 2: Add `getSymbolSuggestions`**
+- [x] **Step 2: Add `getSymbolSuggestions`**
 
 Replace the entire contents of `lib/market-data/search.ts` with:
 
@@ -262,7 +262,7 @@ export async function getSymbolSuggestions(
 }
 ```
 
-- [ ] **Step 3: Add the `search` action to the route**
+- [x] **Step 3: Add the `search` action to the route**
 
 Replace the body of `GET` in `app/api/market-data/route.ts` (lines 11–59) with:
 
@@ -355,17 +355,17 @@ import { getSymbolSuggestions } from "@/lib/market-data/search";
 import type { HistoryRange } from "@/lib/market-data/types";
 ```
 
-- [ ] **Step 4: Run the full suite**
+- [x] **Step 4: Run the full suite**
 
 Run: `npm test`
 Expected: PASS — 25 tests (21 existing + 4 new).
 
-- [ ] **Step 5: Typecheck**
+- [x] **Step 5: Typecheck**
 
 Run: `npx tsc --noEmit`
 Expected: no errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add lib/market-data/cache.ts lib/market-data/search.ts app/api/market-data/route.ts
@@ -386,7 +386,7 @@ git commit -m "feat: add symbol search action to market-data route"
   - `GET /api/market-data?action=search&q=<query>` → `MarketSymbolSuggestion[]`.
 - Produces: replaced Symbol field UI + selection handler. No new exports.
 
-- [ ] **Step 1: Update imports**
+- [x] **Step 1: Update imports**
 
 In `components/portfolio/holding-form.tsx`, change:
 
@@ -413,7 +413,7 @@ to:
 import type { MarketQuote, MarketSymbolSuggestion } from "@/lib/market-data/types";
 ```
 
-- [ ] **Step 2: Add state and refs**
+- [x] **Step 2: Add state and refs**
 
 After the `detectedCurrency` state line (currently `components/portfolio/holding-form.tsx:93`):
 
@@ -424,7 +424,7 @@ const searchFetchRef = useRef(0);
 const skipNextSearchRef = useRef(false);
 ```
 
-- [ ] **Step 3: Reset the dropdown state when the form opens**
+- [x] **Step 3: Reset the dropdown state when the form opens**
 
 In the existing reset `useEffect` (the one that runs `if (!open) return;`), add two lines next to `setDetectedCurrency(null);`:
 
@@ -433,7 +433,7 @@ setSuggestions([]);
 setShowEmpty(false);
 ```
 
-- [ ] **Step 4: Add the debounced search effect**
+- [x] **Step 4: Add the debounced search effect**
 
 Add this effect after the existing price-autofill effect (after the one keyed on `[symbol, isCreating, open]`):
 
@@ -467,7 +467,7 @@ useEffect(() => {
 }, [symbol, isCreating, open]);
 ```
 
-- [ ] **Step 5: Add the selection handler**
+- [x] **Step 5: Add the selection handler**
 
 Add this function just above `handleSubmit`:
 
@@ -481,7 +481,7 @@ const handleSelectSuggestion = (item: MarketSymbolSuggestion) => {
 };
 ```
 
-- [ ] **Step 6: Replace the Symbol field JSX**
+- [x] **Step 6: Replace the Symbol field JSX**
 
 Replace the current Symbol `Input` block (the `isCreating` branch — currently `components/portfolio/holding-form.tsx:259-277`) with:
 
@@ -551,17 +551,17 @@ Replace the current Symbol `Input` block (the `isCreating` branch — currently 
 
 Keep the error hint and the currency hint lines exactly as above (they were previously nested inside the `isCreating &&` block).
 
-- [ ] **Step 7: Typecheck**
+- [x] **Step 7: Typecheck**
 
 Run: `npx tsc --noEmit`
 Expected: no errors.
 
-- [ ] **Step 8: Build**
+- [x] **Step 8: Build**
 
 Run: `npm run build`
 Expected: production build completes.
 
-- [ ] **Step 9: Manual smoke check**
+- [x] **Step 9: Manual smoke check**
 
 Run: `npm run dev`, open the portfolio page, add a holding, type `app` in the Symbol field:
 - A dropdown lists matches (e.g. `AAPL` / Apple Inc. / NASDAQ) after a short delay.
@@ -569,7 +569,7 @@ Run: `npm run dev`, open the portfolio page, add a holding, type `app` in the Sy
 - Hand-typed symbols with no dropdown interaction still work as before.
 - The edit-transaction flow (Symbol field hidden) is unchanged.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add components/portfolio/holding-form.tsx
@@ -583,24 +583,24 @@ git commit -m "feat: symbol search dropdown in holding form"
 **Files:**
 - Modify: `AGENTS.md`
 
-- [ ] **Step 1: Update AGENTS.md test count**
+- [x] **Step 1: Update AGENTS.md test count**
 
 In the `Commands And Verification` section, change `currently 21 tests` to `currently 25 tests`.
 
-- [ ] **Step 2: Update AGENTS.md feature state**
+- [x] **Step 2: Update AGENTS.md feature state**
 
 Under `Current Feature State`, extend the portfolio bullet (the one about holdings auto-detecting trading currency) with:
 
 > Adding a holding shows a live symbol-search dropdown (Yahoo lookup via `action=search`) that fills symbol, name, price, and currency on select; search failures degrade silently to manual typing.
 
-- [ ] **Step 3: Full verification**
+- [x] **Step 3: Full verification**
 
 Run: `npm test`
 Expected: PASS — 25 tests.
 Run: `npm run build`
 Expected: production build completes.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add AGENTS.md

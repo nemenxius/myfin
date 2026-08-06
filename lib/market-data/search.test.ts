@@ -47,4 +47,20 @@ describe("parseYahooSearchResponse", () => {
     expect(parseYahooSearchResponse({})).toEqual([]);
     expect(parseYahooSearchResponse({ quotes: "nope" })).toEqual([]);
   });
+
+  it("normalizes symbol case and whitespace", () => {
+    const data = {
+      quotes: [{ symbol: "  aapl ", shortname: "Apple Inc." }],
+    };
+
+    expect(parseYahooSearchResponse(data)[0]?.symbol).toBe("AAPL");
+  });
+
+  it("falls back to the raw exchange when exchDisp is missing", () => {
+    const data = {
+      quotes: [{ symbol: "MSFT", longname: "Microsoft", exchange: "NMS" }],
+    };
+
+    expect(parseYahooSearchResponse(data)[0]?.exchange).toBe("NMS");
+  });
 });
