@@ -26,22 +26,28 @@ app/
   auth/update-password      # Password recovery page
   onboarding/               # Display-currency onboarding
   dashboard/                # Overview, accounts, settings routes
+  dashboard/portfolio/      # Portfolio overview + holding detail routes
+  api/market-data           # Market data proxy route (quotes/history)
   layout.tsx                # Root layout and brand fonts
   providers.tsx             # TanStack Query + auth providers
 components/
   accounts/                 # Account CRUD, currencies, account type constants
   auth/                     # Auth forms, user menu, onboarding gate
+  brand/                    # Logo
   categories/               # Category CRUD UI and Lucide icon renderer
   dashboard/                # Header, stat cards, month selector, chart, side panel
+  landing/                  # Marketing page header/hero/hero-visual
+  portfolio/                # Holding form, holdings table, charts
   transactions/             # Transaction form and ledger table
   ui/                       # Base UI / Shadcn primitives
 hooks/
   use-auth.tsx              # AuthProvider/useAuth session state
-  use-profile.ts            # profiles row + display currency mutation
+  use-profile.ts            # profiles row + display currency + defaults mutations
   use-primary-currency.ts   # profile currency -> first account -> USD fallback
   use-accounts.ts           # Account CRUD
   use-categories.ts         # Category CRUD
   use-transactions.ts       # Transaction CRUD
+  use-portfolio.ts          # Portfolio holdings/transactions CRUD + computed metrics
 lib/
   supabase/client.ts        # Browser Supabase client
   supabase/server.ts        # Server Supabase client
@@ -49,6 +55,9 @@ lib/
   month.ts                  # Month parsing/window/labels
   date.ts                   # Date input <-> local-midnight ISO helpers
   ledger.ts                 # Pure ledger/running-balance helper
+  pending-display-currency.ts # localStorage helpers for signup currency
+  market-data/              # Yahoo/AlphaVantage/CoinGecko providers + TTL cache
+  portfolio/                # Pure portfolio math helpers + tests
 supabase/
   migrations/               # Numbered SQL migrations
   seed.sql                  # Global categories seed
@@ -101,7 +110,7 @@ proxy.ts                    # Next 16.3 Proxy auth/session refresh; replaces mid
 npm install        # install dependencies
 npm run dev        # local dev server, usually http://localhost:3000
 npm run build      # production build; type-checks and prerenders
-npm test           # Vitest suite; currently 11 tests
+npm test           # Vitest suite; currently 21 tests
 npm run start      # run production build
 ```
 
@@ -131,6 +140,7 @@ Migration state to preserve:
 - `004_category_manage.sql`: update/delete policies for own custom categories. User confirmed this was run remotely on 2026-08-05.
 - `005_add_to_account_id.sql`: `transactions.to_account_id` + transfer RLS policies.
 - `006_profile_defaults.sql`: nullable `profiles.default_account_id` / `default_category_id` for prefilling new transactions. Not yet run remotely; apply via Supabase dashboard SQL editor.
+- `007_portfolio_and_holdings.sql`: portfolio_holdings + holding_transactions tables, RLS, indexes. Not yet run remotely; apply via Supabase dashboard SQL editor.
 
 After schema changes, regenerate types with:
 
@@ -160,6 +170,8 @@ supabase gen types typescript --project-id <PROJECT_ID> --schema public > types/
 - Settings roadmap: dark mode/theme, CSV export, display name, week/month-start preferences, MFA/session management, delete account.
 - Optional tooling cleanup: replace broken `npm run lint` script or add an ESLint config.
 - Optional Vitest cleanup: remove the non-failing native config warning by moving config to `.mjs` or setting package/module configuration intentionally.
+- Portfolio: holdings are deleted when a user deletes the holding (cascades transactions); consider warning before deletion (UI already confirms).
+- Market data: Yahoo rate limits; in-memory cache is per server instance. If multi-instance, consider a shared cache.
 
 ## 8. Token-Saving / Ignore Guidance
 
