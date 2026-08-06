@@ -20,7 +20,7 @@ export function cacheSet<T>(key: string, value: T, ttlMs: number): void {
 }
 
 export function cacheKey(
-  kind: "quote" | "history",
+  kind: "quote" | "history" | "search",
   symbol: string,
   range?: string
 ): string {

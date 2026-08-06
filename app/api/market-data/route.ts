@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getQuote } from "@/lib/market-data/quote";
 import { getHistory } from "@/lib/market-data/history";
+import { getSymbolSuggestions } from "@/lib/market-data/search";
 import type { HistoryRange } from "@/lib/market-data/types";
 
 const RANGES: HistoryRange[] = ["3m", "6m", "1y"];
@@ -18,8 +19,33 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
-  const symbol = url.searchParams.get("symbol")?.trim().toUpperCase() ?? "";
   const action = url.searchParams.get("action") ?? "quote";
+
+  if (action === "search") {
+    const query = url.searchParams.get("q")?.trim() ?? "";
+    if (query.length < 2) {
+      return NextResponse.json(
+        { error: "q must be at least 2 characters" },
+        { status: 400 }
+      );
+    }
+    try {
+      const suggestions = await getSymbolSuggestions(query);
+      return NextResponse.json(suggestions, {
+        headers: { "Cache-Control": "public, max-age=60" },
+      });
+    } catch (error) {
+      return NextResponse.json(
+        {
+          error:
+            error instanceof Error ? error.message : "Market data unavailable",
+        },
+        { status: 502 }
+      );
+    }
+  }
+
+  const symbol = url.searchParams.get("symbol")?.trim().toUpperCase() ?? "";
   const rangeParam = url.searchParams.get("range") ?? "1y";
 
   if (!symbol) {
