@@ -110,19 +110,33 @@ export function SidePanel({ month }: { month: string }) {
                 </ResponsiveContainer>
               </div>
               <ul className="flex-1 space-y-2">
-                {byCategory.slice(0, 3).map((entry, i) => (
-                  <li key={entry.id} className="flex items-center justify-between gap-2 text-sm">
-                    <span className="flex items-center gap-2 text-ink">
-                      <span style={{ color: DONUT_COLORS[i % DONUT_COLORS.length] }}>
-                        <CategoryIcon slug={entry.icon ?? "Tag"} className="h-4 w-4" />
+                {byCategory.slice(0, 3).map((entry, i) => {
+                  const isActive = activeIndex === null || activeIndex === i;
+                  return (
+                    <li
+                      key={entry.id}
+                      onMouseEnter={() => setActiveIndex(i)}
+                      onMouseLeave={() => setActiveIndex(null)}
+                      className={`flex items-center justify-between gap-2 text-sm transition-opacity duration-200 ${
+                        isActive ? "opacity-100" : "opacity-35"
+                      }`}
+                    >
+                      <span
+                        className={`flex items-center gap-2 ${
+                          isActive ? "font-semibold text-ink" : "text-ink"
+                        }`}
+                      >
+                        <span style={{ color: DONUT_COLORS[i % DONUT_COLORS.length] }}>
+                          <CategoryIcon slug={entry.icon ?? "Tag"} className="h-4 w-4" />
+                        </span>
+                        {entry.name}
                       </span>
-                      {entry.name}
-                    </span>
-                    <span className="font-mono tabular-nums text-fog">
-                      {formatCurrency(entry.amount, currency)}
-                    </span>
-                  </li>
-                ))}
+                      <span className="font-mono tabular-nums text-fog">
+                        {formatCurrency(entry.amount, currency)}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}
