@@ -104,6 +104,7 @@ export function HoldingForm({
     setDetectedCurrency(null);
     setSuggestions([]);
     setShowEmpty(false);
+    skipNextSearchRef.current = false;
     setType("buy");
     setCommission("0");
     const parts = nowParts();
@@ -170,7 +171,10 @@ export function HoldingForm({
     setSuggestions([]);
     setShowEmpty(false);
     const trimmed = symbol.trim();
-    if (trimmed.length < 2) return;
+    if (trimmed.length < 2) {
+      searchFetchRef.current++;
+      return;
+    }
     if (skipNextSearchRef.current) {
       skipNextSearchRef.current = false;
       return;
