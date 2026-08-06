@@ -101,7 +101,7 @@ proxy.ts                    # Next 16.3 Proxy auth/session refresh; replaces mid
 npm install        # install dependencies
 npm run dev        # local dev server, usually http://localhost:3000
 npm run build      # production build; type-checks and prerenders
-npm test           # Vitest suite; currently 10 tests
+npm test           # Vitest suite; currently 11 tests
 npm run start      # run production build
 ```
 
@@ -144,6 +144,7 @@ supabase gen types typescript --project-id <PROJECT_ID> --schema public > types/
 - Transactions support create/edit/delete with optimistic updates and month-default dates.
 - Categories are managed in `/dashboard/settings`: global categories are read-only; users can create/edit/delete custom categories with a Lucide icon picker.
 - Category icons render in the dashboard side-panel by-category list and in the transaction form dropdown.
+- The side-panel donut chart and its top-3 category list are hover-synced via a shared `activeIndex` state in `side-panel.tsx`. Recharts 3 note: per-`Cell` geometry props (`outerRadius`, etc.) no longer exist; per-slice active styling uses the `Pie` `shape` prop rendering a `Sector` (Cell carries only `fill`).
 - Currency formatting is currency-aware and guarded against invalid currency codes; aggregate multi-currency totals still sum raw values and label them in primary currency. There is no FX conversion.
 - Proxy migration is complete: `proxy.ts` replaced deprecated `middleware.ts`. Restart dev servers if the old deprecation warning persists.
 
