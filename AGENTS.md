@@ -110,7 +110,7 @@ proxy.ts                    # Next 16.3 Proxy auth/session refresh; replaces mid
 npm install        # install dependencies
 npm run dev        # local dev server, usually http://localhost:3000
 npm run build      # production build; type-checks and prerenders
-npm test           # Vitest suite; currently 21 tests
+npm test           # Vitest suite; currently 25 tests
 npm run start      # run production build
 ```
 
@@ -159,6 +159,7 @@ supabase gen types typescript --project-id <PROJECT_ID> --schema public > types/
 - Category icons render in the dashboard side-panel by-category list and in the transaction form dropdown.
 - The side-panel donut chart and its top-3 category list are hover-synced via a shared `activeIndex` state in `side-panel.tsx`. Recharts 3 note: per-`Cell` geometry props (`outerRadius`, etc.) no longer exist; per-slice active styling uses the `Pie` `shape` prop rendering a `Sector` (Cell carries only `fill`).
 - Portfolio holdings auto-detect their trading currency from the live quote when added (e.g. `EUNL.DE` → EUR), falling back to the profile display currency if the quote can't be fetched. Existing holdings created before this change may still carry the `USD` default.
+- Adding a holding shows a live symbol-search dropdown (Yahoo lookup via `action=search`) that fills symbol, name, price, and currency on select; search failures degrade silently to manual typing.
 - Currency formatting is currency-aware and guarded against invalid currency codes; aggregate multi-currency totals still sum raw values and label them in primary currency. There is no FX conversion.
 - Proxy migration is complete: `proxy.ts` replaced deprecated `middleware.ts`. Restart dev servers if the old deprecation warning persists.
 
