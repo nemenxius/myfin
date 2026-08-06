@@ -163,14 +163,15 @@ supabase gen types typescript --project-id <PROJECT_ID> --schema public > types/
 
 ## 7. Known Follow-Ups
 
-- Tighten transaction insert/update RLS so `category_id` must be global or owned by the same user.
-- Add UI feedback for failed category/account delete mutations instead of silent optimistic rollback.
-- Consider typing category/account update inputs to exclude `user_id`.
+- Tighten transaction insert/update RLS so `category_id` must be global or owned by the same user. Same ownership gap exists on `holding_transactions`: its foreign-ownership EXISTS policy is OR-combined with the `auth.uid()` ALL policy, so a user could insert a transaction referencing another user's `holding_id`. Migration 007 is not yet applied remotely, so an in-file fix is cheap before applying.
+- Add UI feedback for failed category/account delete mutations instead of silent optimistic rollback. Same class applies to portfolio holding/transaction deletes.
+- Consider typing category/account update inputs to exclude `user_id`. Same applies to `updateHoldingTransaction` (caller-supplied updates are not stripped of `user_id`/`holding_id`/`created_at`; only safe fields are sent by the current form).
 - Consider a small icon-map drift test for `CATEGORY_ICONS` vs the internal icon map.
 - Settings roadmap: dark mode/theme, CSV export, display name, week/month-start preferences, MFA/session management, delete account.
 - Optional tooling cleanup: replace broken `npm run lint` script or add an ESLint config.
 - Optional Vitest cleanup: remove the non-failing native config warning by moving config to `.mjs` or setting package/module configuration intentionally.
 - Portfolio: holdings are deleted when a user deletes the holding (cascades transactions); consider warning before deletion (UI already confirms).
+- Portfolio: the portfolio chart multiplies each holding's current total shares across its entire history range (spec-mandated model; do not "fix" without updating the spec).
 - Market data: Yahoo rate limits; in-memory cache is per server instance. If multi-instance, consider a shared cache.
 
 ## 8. Token-Saving / Ignore Guidance
