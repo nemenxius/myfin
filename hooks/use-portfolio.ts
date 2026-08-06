@@ -24,6 +24,7 @@ type HoldingTransactionInsert = TablesInsert<"holding_transactions">;
 
 export interface HoldingWithCalculations extends Holding {
   transactions: HoldingTransaction[];
+  holdingHistory: MarketHistoryPoint[];
   totalShares: number;
   avgPrice: number;
   costBasis: number;
@@ -159,7 +160,13 @@ export function useHoldings() {
         quote?.currentPrice ?? null,
         quote?.previousClose ?? null
       );
-      return { ...holding, transactions, ...calc, quote };
+      return {
+        ...holding,
+        transactions,
+        ...calc,
+        quote,
+        holdingHistory: historyBySymbol.get(holding.symbol) ?? [],
+      };
     });
   }, [dataQuery.data, quoteBySymbol]);
 
