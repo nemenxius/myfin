@@ -185,6 +185,7 @@ supabase gen types typescript --project-id <PROJECT_ID> --schema public > types/
 ## 7. Known Follow-Ups
 
 - Tighten transaction insert/update RLS so `category_id` must be global or owned by the same user. Same ownership gap exists on `holding_transactions`: its foreign-ownership EXISTS policy is OR-combined with the `auth.uid()` ALL policy, so a user could insert a transaction referencing another user's `holding_id`. Migration 007 is not yet applied remotely, so an in-file fix is cheap before applying.
+- Net worth entries UPDATE RLS (010) now checks `auth.uid() = user_id` in `WITH CHECK`; the pre-existing transaction/holding foreign-ownership gaps above remain open.
 - Add UI feedback for failed category/account delete mutations instead of silent optimistic rollback. Same class applies to portfolio holding/transaction deletes.
 - Consider typing category/account update inputs to exclude `user_id`. Same applies to `updateHoldingTransaction` (caller-supplied updates are not stripped of `user_id`/`holding_id`/`created_at`; only safe fields are sent by the current form).
 - Consider a small icon-map drift test for `CATEGORY_ICONS` vs the internal icon map.

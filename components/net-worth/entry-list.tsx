@@ -175,7 +175,6 @@ export function EntryList({ entryType, onAdd, onEdit }: EntryListProps) {
                             slug={
                               categoryMap.get(entry.category_id)?.icon ?? "Tag"
                             }
-                            className="h-3.5 w-3.5"
                           />
                           {categoryMap.get(entry.category_id)?.name ??
                             "Uncategorized"}

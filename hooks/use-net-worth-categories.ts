@@ -5,6 +5,7 @@ import type { Tables, TablesInsert } from "@/types/database";
 type NetWorthCategory = Tables<"net_worth_categories">;
 type NetWorthCategoryInsert = TablesInsert<"net_worth_categories">;
 type NetWorthCategoryInput = Omit<NetWorthCategoryInsert, "user_id">;
+type NetWorthCategoryUpdate = { id: string } & Pick<NetWorthCategoryInsert, "name" | "icon">;
 
 const queryKey = ["net-worth-categories"] as const;
 
@@ -81,7 +82,7 @@ export function useNetWorthCategories() {
     mutationFn: async ({
       id,
       ...updates
-    }: { id: string } & Partial<NetWorthCategoryInsert>): Promise<NetWorthCategory> => {
+    }: NetWorthCategoryUpdate): Promise<NetWorthCategory> => {
       const { data, error } = await supabaseClient
         .from("net_worth_categories")
         .update(updates)
@@ -92,7 +93,7 @@ export function useNetWorthCategories() {
       if (error) throw error;
       return data;
     },
-    onMutate: async ({ id, ...updates }) => {
+    onMutate: async ({ id, ...updates }: NetWorthCategoryUpdate) => {
       await queryClient.cancelQueries({ queryKey });
 
       const previous = queryClient.getQueryData<NetWorthCategory[]>(queryKey);
@@ -138,7 +139,10 @@ export function useNetWorthCategories() {
         queryClient.setQueryData(queryKey, context.previous);
       }
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey }),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: ["net-worth"] });
+    },
   });
 
   return {

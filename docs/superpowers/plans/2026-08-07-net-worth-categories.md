@@ -97,10 +97,13 @@ FOR INSERT WITH CHECK (
 CREATE POLICY "Users can update own net worth entries" ON net_worth_entries
 FOR UPDATE USING (auth.uid() = user_id)
 WITH CHECK (
-  category_id IS NULL
-  OR category_id IN (
-    SELECT id FROM net_worth_categories
-    WHERE user_id IS NULL OR user_id = auth.uid()
+  auth.uid() = user_id
+  AND (
+    category_id IS NULL
+    OR category_id IN (
+      SELECT id FROM net_worth_categories
+      WHERE user_id IS NULL OR user_id = auth.uid()
+    )
   )
 );
 
