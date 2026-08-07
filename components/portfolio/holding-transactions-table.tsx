@@ -46,10 +46,10 @@ import type { Tables } from "@/types/database";
 type HoldingTransaction = Tables<"holding_transactions">;
 
 const TYPE_BADGE_STYLES: Record<string, string> = {
-  buy: "bg-[#eaf2f5] text-[#083458]",
-  sell: "bg-[#fdf0ec] text-[#c0392b]",
-  dividend: "bg-[#e8f3ee] text-[#0e7c5b]",
-  transfer: "bg-[#f2f2f0] text-[#6c7a83]",
+  buy: "bg-secondary text-secondary-foreground",
+  sell: "bg-ember/10 text-ember",
+  dividend: "bg-leaf/10 text-leaf",
+  transfer: "bg-muted/50 text-muted-foreground",
 };
 
 export function HoldingTransactionsTable({
@@ -80,9 +80,9 @@ export function HoldingTransactionsTable({
   };
 
   return (
-    <Card className="border-border/50 bg-white shadow-sm">
+    <Card className="border-border/50 bg-card shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="font-display text-xl font-medium text-ink">
+        <CardTitle className="font-display text-xl font-medium text-foreground">
           Transactions
         </CardTitle>
         <Button onClick={openAdd}>
@@ -94,7 +94,7 @@ export function HoldingTransactionsTable({
         {holding.transactions.length === 0 ? (
           <div className="flex h-40 flex-col items-center justify-center gap-3 text-center">
             <div>
-              <p className="text-sm font-medium text-ink">
+              <p className="text-sm font-medium text-foreground">
                 No transactions yet
               </p>
               <p className="mt-1 text-sm text-fog">
@@ -147,7 +147,7 @@ export function HoldingTransactionsTable({
                         variant="outline"
                         className={
                           TYPE_BADGE_STYLES[transaction.type] ??
-                          "bg-[#f2f2f0] text-[#6c7a83]"
+                          "bg-muted/50 text-muted-foreground"
                         }
                       >
                         {HOLDING_TRANSACTION_TYPE_LABELS[transaction.type] ??
@@ -155,7 +155,7 @@ export function HoldingTransactionsTable({
                       </Badge>
                     </TableCell>
                     <TableCell
-                      className={`text-right font-mono tabular-nums ${isSell ? "text-ember" : "text-ink"}`}
+                      className={`text-right font-mono tabular-nums ${isSell ? "text-ember" : "text-foreground"}`}
                     >
                       {isSell ? "-" : "+"}
                       {transaction.shares.toFixed(
@@ -168,7 +168,7 @@ export function HoldingTransactionsTable({
                         holding.currency
                       )}
                     </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums text-ink">
+                    <TableCell className="text-right font-mono tabular-nums text-foreground">
                       {formatCurrency(total, holding.currency)}
                     </TableCell>
                     <TableCell className="hidden text-right font-mono tabular-nums text-fog md:table-cell">

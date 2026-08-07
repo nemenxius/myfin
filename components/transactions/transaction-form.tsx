@@ -164,7 +164,7 @@ export function TransactionForm({
               <Landmark className="h-6 w-6 text-[#18848c]" />
             </span>
             <div>
-              <p className="text-sm font-medium text-ink">No accounts yet</p>
+              <p className="text-sm font-medium text-foreground">No accounts yet</p>
               <p className="mt-1 text-sm text-fog">
                 Create an account before adding a transaction.
               </p>

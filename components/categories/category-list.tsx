@@ -92,7 +92,7 @@ export function CategoryList() {
                     key={category.id}
                     className="flex items-center justify-between px-3 py-2"
                   >
-                    <span className="flex items-center gap-2.5 text-sm text-ink">
+                    <span className="flex items-center gap-2.5 text-sm text-foreground">
                       <CategoryIcon
                         slug={category.icon}
                         className="h-4 w-4 text-fog"
@@ -136,7 +136,7 @@ export function CategoryList() {
                   key={category.id}
                   className="flex items-center justify-between px-3 py-2"
                 >
-                  <span className="flex items-center gap-2.5 text-sm text-ink">
+                  <span className="flex items-center gap-2.5 text-sm text-foreground">
                     <CategoryIcon
                       slug={category.icon}
                       className="h-4 w-4 text-fog"
@@ -145,7 +145,7 @@ export function CategoryList() {
                   </span>
                   <Badge
                     variant="outline"
-                    className="bg-[#eaf2f5] text-[#083458]"
+                    className="bg-secondary text-secondary-foreground"
                   >
                     Global
                   </Badge>

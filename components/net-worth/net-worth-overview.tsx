@@ -33,7 +33,7 @@ export function NetWorthOverview() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-medium text-ink">
+          <h1 className="font-display text-2xl font-medium text-foreground">
             Net Worth
           </h1>
           <p className="mt-0.5 text-sm text-fog">
@@ -53,12 +53,12 @@ export function NetWorthOverview() {
       </div>
 
       {isEmpty ? (
-        <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-xl border border-border/60 bg-white px-6 text-center shadow-sm">
+        <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-xl border border-border/60 bg-card px-6 text-center shadow-sm">
           <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#18848c]/10">
             <Scale className="h-6 w-6 text-[#18848c]" />
           </span>
           <div>
-            <p className="text-sm font-medium text-ink">
+            <p className="text-sm font-medium text-foreground">
               Build your net worth
             </p>
             <p className="mt-1 text-sm text-fog">

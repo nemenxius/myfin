@@ -90,27 +90,27 @@ export function SpendingChart({ month }: { month: string }) {
             >
               <defs>
                 <linearGradient id="spendingFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#18848c" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#083458" stopOpacity={0.03} />
+                <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.35} />
+                <stop offset="100%" stopColor="var(--chart-2)" stopOpacity={0.03} />
                 </linearGradient>
               </defs>
               <CartesianGrid
                 strokeDasharray="3 3"
                 vertical={false}
-                stroke="hsl(var(--border))"
+                stroke="var(--border)"
               />
               <XAxis
                 dataKey="day"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
                 dy={6}
                 interval={Math.max(1, Math.floor(data.length / 8))}
               />
               <YAxis
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))", fontFamily: "var(--font-mono)" }}
+                tick={{ fontSize: 12, fill: "var(--muted-foreground)", fontFamily: "var(--font-mono)" }}
                 tickFormatter={(value: number) =>
                   `${getCurrencySymbol(currency)}${value}`
                 }
@@ -118,7 +118,7 @@ export function SpendingChart({ month }: { month: string }) {
               />
               <Tooltip
                 content={<CustomTooltip currency={currency} />}
-                cursor={{ stroke: "#18848c", strokeDasharray: "4 4" }}
+                cursor={{ stroke: "var(--chart-1)", strokeDasharray: "4 4" }}
                 labelFormatter={(label) => {
                   const day = parseInt(String(label), 10);
                   const [year, monthIndex] = month.split("-").map(Number);
@@ -128,10 +128,10 @@ export function SpendingChart({ month }: { month: string }) {
               <Area
                 type="monotone"
                 dataKey="amount"
-                stroke="#083458"
+                stroke="var(--chart-1)"
                 strokeWidth={2.5}
                 fill="url(#spendingFill)"
-                activeDot={{ r: 5, fill: "#18848c", strokeWidth: 0 }}
+                activeDot={{ r: 5, fill: "var(--chart-1)", strokeWidth: 0 }}
               />
             </AreaChart>
             </ResponsiveContainer>

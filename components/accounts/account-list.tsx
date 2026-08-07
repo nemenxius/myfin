@@ -98,10 +98,10 @@ export function AccountList() {
   const totalBalance = rows.reduce((sum, row) => sum + row.balance, 0);
 
   return (
-    <Card className="border-border/50 bg-white shadow-sm">
+    <Card className="border-border/50 bg-card shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle className="font-display text-xl font-medium text-ink">
+          <CardTitle className="font-display text-xl font-medium text-foreground">
             Accounts
           </CardTitle>
           <p className="mt-0.5 text-xs text-fog">
@@ -127,7 +127,7 @@ export function AccountList() {
               <Landmark className="h-6 w-6 text-[#18848c]" />
             </span>
             <div>
-              <p className="text-sm font-medium text-ink">No accounts yet</p>
+              <p className="text-sm font-medium text-foreground">No accounts yet</p>
               <p className="mt-1 text-sm text-fog">
                 Create your first account to start tracking transactions.
               </p>
@@ -154,13 +154,13 @@ export function AccountList() {
                   key={account.id}
                   className="transition-colors hover:bg-muted/40"
                 >
-                  <TableCell className="font-medium text-ink">
+                  <TableCell className="font-medium text-foreground">
                     {account.name}
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
                     <Badge
                       variant="outline"
-                      className="bg-[#eaf2f5] text-[#083458]"
+                      className="bg-secondary text-secondary-foreground"
                     >
                       {ACCOUNT_TYPE_LABELS[account.account_type] ??
                         account.account_type}
@@ -171,7 +171,7 @@ export function AccountList() {
                   </TableCell>
                   <TableCell
                     className={`text-right font-mono tabular-nums ${
-                      account.balance >= 0 ? "text-ink" : "text-ember"
+                      account.balance >= 0 ? "text-foreground" : "text-ember"
                     }`}
                   >
                     {formatCurrency(account.balance, account.currency)}

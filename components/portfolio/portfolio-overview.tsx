@@ -15,7 +15,7 @@ export function PortfolioOverview() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-medium text-ink">
+          <h1 className="font-display text-2xl font-medium text-foreground">
             Portfolio
           </h1>
           <p className="mt-0.5 text-sm text-fog">

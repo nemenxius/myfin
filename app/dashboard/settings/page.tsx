@@ -128,13 +128,13 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-xl space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-medium text-ink">Settings</h1>
+        <h1 className="font-display text-2xl font-medium text-foreground">Settings</h1>
         <p className="mt-0.5 text-sm text-fog">
           Signed in as {user?.email}
         </p>
       </div>
 
-      <Card className="border-border/50 bg-white shadow-sm">
+      <Card className="border-border/50 bg-card shadow-sm">
         <CardHeader>
           <CardTitle className="text-base font-medium">Display currency</CardTitle>
           <CardDescription>
@@ -163,7 +163,7 @@ export default function SettingsPage() {
               <p className="text-xs text-destructive">{currencyError}</p>
             )}
             {currencyMsg && (
-              <p className="text-xs text-[#0e7c5b]">{currencyMsg}</p>
+              <p className="text-xs text-leaf">{currencyMsg}</p>
             )}
             <Button type="submit" className="w-fit">
               Save
@@ -172,7 +172,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card className="border-border/50 bg-white shadow-sm">
+      <Card className="border-border/50 bg-card shadow-sm">
         <CardHeader>
           <CardTitle className="text-base font-medium">Defaults</CardTitle>
           <CardDescription>
@@ -240,7 +240,7 @@ export default function SettingsPage() {
               <p className="text-xs text-destructive">{defaultsError}</p>
             )}
             {defaultsMsg && (
-              <p className="text-xs text-[#0e7c5b]">{defaultsMsg}</p>
+              <p className="text-xs text-leaf">{defaultsMsg}</p>
             )}
             <Button type="submit" className="w-fit">
               Save
@@ -250,7 +250,7 @@ export default function SettingsPage() {
       </Card>
 
       {!isGoogleUser && (
-        <Card className="border-border/50 bg-white shadow-sm">
+        <Card className="border-border/50 bg-card shadow-sm">
           <CardHeader>
             <CardTitle className="text-base font-medium">Password</CardTitle>
             <CardDescription>
@@ -287,7 +287,7 @@ export default function SettingsPage() {
                 <p className="text-xs text-destructive">{passwordError}</p>
               )}
               {passwordMsg && (
-                <p className="text-xs text-[#0e7c5b]">{passwordMsg}</p>
+                <p className="text-xs text-leaf">{passwordMsg}</p>
               )}
               <Button type="submit" className="w-fit" disabled={passwordLoading}>
                 {passwordLoading ? "Updating…" : "Update password"}
@@ -297,7 +297,7 @@ export default function SettingsPage() {
         </Card>
       )}
 
-      <Card className="border-border/50 bg-white shadow-sm">
+      <Card className="border-border/50 bg-card shadow-sm">
         <CardHeader>
           <CardTitle className="text-base font-medium">Accounts</CardTitle>
           <CardDescription>
@@ -309,7 +309,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card className="border-border/50 bg-white shadow-sm">
+      <Card className="border-border/50 bg-card shadow-sm">
         <CardHeader>
           <CardTitle className="text-base font-medium">Categories</CardTitle>
           <CardDescription>
@@ -321,7 +321,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card className="border-border/50 bg-white shadow-sm">
+      <Card className="border-border/50 bg-card shadow-sm">
         <CardHeader>
           <CardTitle className="text-base font-medium">Sign out</CardTitle>
           <CardDescription>

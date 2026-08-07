@@ -103,6 +103,7 @@ proxy.ts                    # Next 16.3 Proxy auth/session refresh; replaces mid
 ### Styling And UI
 
 - Brand colors: navy `#083458`, teal `#18848C`, paper `#F4F5F3`, ink `#0B1C28`, fog `#6C7A83`, leaf `#0E7C5B`, ember `#C0392B`.
+- Theme CSS variables in `app/globals.css` hold **full hex colors** (e.g. `--muted-foreground: #64747f`), NOT shadcn-style HSL triplets. Therefore in Recharts/SVG use `var(--x)` directly (e.g. `fill: "var(--muted-foreground)"`, `stroke: "var(--border)"`). Wrapping in `hsl(var(--x))` is invalid CSS and silently renders black text/strokes in dark mode. Never hardcode `bg-white`/`text-ink`/hex greys in components — use `bg-card`, `bg-popover`, `bg-secondary`, `text-foreground`, `text-muted-foreground`, `text-fog`, `bg-leaf/10 text-leaf`, `bg-ember/10 text-ember`, and chart colors via `var(--chart-1..5)` / `--leaf` / `--ember`.
 - Fonts: Public Sans (`--font-sans`), Newsreader (`--font-display`), IBM Plex Mono (`--font-mono`). Use `font-mono tabular-nums` for money.
 - Prefer primitives in `components/ui/` over custom base markup.
 - Base UI quirks: `Button` uses `render` rather than `asChild`; Select `onValueChange` passes `string | null`; `SelectValue` supports a function child for custom selected rendering.

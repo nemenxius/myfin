@@ -23,7 +23,7 @@ export function StatCard({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 rounded-xl border border-border/60 bg-white p-4 shadow-sm transition-shadow hover:shadow-md",
+        "flex flex-col gap-3 rounded-xl border border-border/60 bg-card p-4 shadow-sm transition-shadow hover:shadow-md",
         className
       )}
     >
@@ -35,7 +35,7 @@ export function StatCard({
           <Icon className="h-3.5 w-3.5 text-[#18848c]" />
         </span>
       </div>
-      <p className="font-mono text-2xl font-medium tracking-tight text-ink tabular-nums">
+      <p className="font-mono text-2xl font-medium tracking-tight text-foreground tabular-nums">
         {value}
       </p>
       {delta ? (

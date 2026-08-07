@@ -49,9 +49,9 @@ import type { Tables } from "@/types/database";
 type Transaction = Tables<"transactions">;
 
 const typeStyles: Record<string, string> = {
-  income: "bg-emerald-100 text-emerald-700",
-  expense: "bg-red-100 text-red-700",
-  transfer: "bg-zinc-100 text-zinc-700",
+  income: "bg-leaf/10 text-leaf",
+  expense: "bg-ember/10 text-ember",
+  transfer: "bg-muted/50 text-muted-foreground",
 };
 
 export function TransactionList({ month }: { month: string }) {
@@ -113,10 +113,10 @@ export function TransactionList({ month }: { month: string }) {
   };
 
   return (
-    <Card className="border-border/50 bg-white shadow-sm">
+    <Card className="border-border/50 bg-card shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle className="font-display text-xl font-medium text-ink">
+          <CardTitle className="font-display text-xl font-medium text-foreground">
             This Month Activity
           </CardTitle>
           <p className="mt-0.5 text-xs text-fog">
@@ -172,7 +172,7 @@ export function TransactionList({ month }: { month: string }) {
                   <TableCell className="whitespace-nowrap text-fog">
                     {format(new Date(transaction.date), "MMM d, yyyy")}
                   </TableCell>
-                    <TableCell className="text-ink">
+                    <TableCell className="text-foreground">
                       {transaction.transaction_type === "Transfer" &&
                       transaction.to_account_id ? (
                         <span className="flex items-center gap-1.5">
@@ -196,7 +196,7 @@ export function TransactionList({ month }: { month: string }) {
                         "Untitled"
                       )}
                     </TableCell>
-                  <TableCell className="text-ink">
+                  <TableCell className="text-foreground">
                     {transaction.description ?? "Untitled"}
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
@@ -204,7 +204,7 @@ export function TransactionList({ month }: { month: string }) {
                       variant="outline"
                       className={
                         typeStyles[transaction.transaction_type] ??
-                        "bg-zinc-100 text-zinc-700"
+                        "bg-muted/50 text-muted-foreground"
                       }
                     >
                       {transaction.transaction_type}
@@ -218,7 +218,7 @@ export function TransactionList({ month }: { month: string }) {
                     {transaction.amount >= 0 ? "+" : "−"}
                     {formatCurrency(Math.abs(transaction.amount), currency)}
                   </TableCell>
-                  <TableCell className="text-right font-mono tabular-nums text-ink">
+                  <TableCell className="text-right font-mono tabular-nums text-foreground">
                     {formatCurrency(transaction.balance, currency)}
                   </TableCell>
                   <TableCell>

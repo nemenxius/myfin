@@ -44,7 +44,7 @@ export function MonthSelector({
       >
         <ChevronLeft />
       </Button>
-      <span className="w-32 text-center text-sm font-medium text-ink">
+      <span className="w-32 text-center text-sm font-medium text-foreground">
         {monthLabel(month)}
       </span>
       <Button

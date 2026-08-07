@@ -30,7 +30,7 @@ export function HoldingDetail({ holdingId }: { holdingId: string }) {
   if (!holding) {
     return (
       <div className="flex h-40 flex-col items-center justify-center gap-2 text-center">
-        <p className="text-sm font-medium text-ink">Holding not found</p>
+        <p className="text-sm font-medium text-foreground">Holding not found</p>
         <Link
           href="/dashboard/portfolio"
           className="text-sm text-[#18848c] hover:underline"
@@ -49,7 +49,7 @@ export function HoldingDetail({ holdingId }: { holdingId: string }) {
       <div>
         <Link
           href="/dashboard/portfolio"
-          className="inline-flex items-center gap-1.5 text-sm text-fog transition-colors hover:text-ink"
+          className="inline-flex items-center gap-1.5 text-sm text-fog transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
           Portfolio
@@ -59,10 +59,10 @@ export function HoldingDetail({ holdingId }: { holdingId: string }) {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="font-display text-3xl font-medium text-ink">
+            <h1 className="font-display text-3xl font-medium text-foreground">
               {holding.symbol}
             </h1>
-            <Badge variant="outline" className="bg-[#eaf2f5] text-[#083458]">
+            <Badge variant="outline" className="bg-secondary text-secondary-foreground">
               {ASSET_TYPE_LABELS[holding.asset_type] ?? holding.asset_type}
             </Badge>
           </div>
@@ -71,7 +71,7 @@ export function HoldingDetail({ holdingId }: { holdingId: string }) {
           )}
         </div>
         <div className="text-right">
-          <p className="font-mono text-2xl font-medium tabular-nums text-ink">
+          <p className="font-mono text-2xl font-medium tabular-nums text-foreground">
             {hasQuote
               ? formatCurrency(
                   holding.quote!.currentPrice,
@@ -97,33 +97,33 @@ export function HoldingDetail({ holdingId }: { holdingId: string }) {
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <div className="rounded-xl border border-border/60 bg-white p-4 shadow-sm">
+        <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
           <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-fog">
             Shares
           </p>
-          <p className="mt-1 font-mono text-xl font-medium tabular-nums text-ink">
+          <p className="mt-1 font-mono text-xl font-medium tabular-nums text-foreground">
             {holding.totalShares.toFixed(
               holding.totalShares % 1 === 0 ? 0 : 4
             )}
           </p>
         </div>
-        <div className="rounded-xl border border-border/60 bg-white p-4 shadow-sm">
+        <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
           <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-fog">
             Avg cost
           </p>
-          <p className="mt-1 font-mono text-xl font-medium tabular-nums text-ink">
+          <p className="mt-1 font-mono text-xl font-medium tabular-nums text-foreground">
             {formatCurrency(holding.avgPrice, holding.currency)}
           </p>
         </div>
-        <div className="rounded-xl border border-border/60 bg-white p-4 shadow-sm">
+        <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
           <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-fog">
             Current value
           </p>
-          <p className="mt-1 font-mono text-xl font-medium tabular-nums text-ink">
+          <p className="mt-1 font-mono text-xl font-medium tabular-nums text-foreground">
             {formatCurrency(holding.currentValue, holding.currency)}
           </p>
         </div>
-        <div className="rounded-xl border border-border/60 bg-white p-4 shadow-sm">
+        <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
           <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-fog">
             Total return
           </p>

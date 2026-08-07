@@ -10,7 +10,14 @@ import { formatCurrency } from "@/lib/format";
 import { monthWindow } from "@/lib/month";
 import { CategoryIcon } from "@/components/categories/category-icons";
 
-const DONUT_COLORS = ["#083458", "#18848c", "#0e7c5b", "#c0392b", "#2a9d9f", "#4a6a7d"];
+const DONUT_COLORS = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--leaf)",
+  "var(--ember)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+];
 const UNCATEGORIZED_CATEGORY_ID = "__myfin_uncategorized__";
 
 export function SidePanel({ month }: { month: string }) {
@@ -54,9 +61,9 @@ export function SidePanel({ month }: { month: string }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <Card className="border-border/50 bg-white shadow-sm">
+      <Card className="border-border/50 bg-card shadow-sm">
         <CardHeader>
-          <CardTitle className="font-display text-base font-medium text-ink">
+          <CardTitle className="font-display text-base font-medium text-foreground">
             By category
           </CardTitle>
         </CardHeader>
@@ -123,7 +130,7 @@ export function SidePanel({ month }: { month: string }) {
                     >
                       <span
                         className={`flex items-center gap-2 ${
-                          isActive ? "font-semibold text-ink" : "text-ink"
+                          isActive ? "font-semibold text-foreground" : "text-foreground"
                         }`}
                       >
                         <span style={{ color: DONUT_COLORS[i % DONUT_COLORS.length] }}>

@@ -82,10 +82,10 @@ export function HoldingsTable({ onAddHolding }: { onAddHolding: () => void }) {
   };
 
   return (
-    <Card className="border-border/50 bg-white shadow-sm">
+    <Card className="border-border/50 bg-card shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle className="font-display text-xl font-medium text-ink">
+          <CardTitle className="font-display text-xl font-medium text-foreground">
             Holdings
           </CardTitle>
           <p className="mt-0.5 text-xs text-fog">
@@ -111,7 +111,7 @@ export function HoldingsTable({ onAddHolding }: { onAddHolding: () => void }) {
               <TrendingUp className="h-6 w-6 text-[#18848c]" />
             </span>
             <div>
-              <p className="text-sm font-medium text-ink">
+              <p className="text-sm font-medium text-foreground">
                 No holdings added yet. Track your first investment.
               </p>
               <p className="mt-1 text-sm text-fog">
@@ -155,7 +155,7 @@ export function HoldingsTable({ onAddHolding }: { onAddHolding: () => void }) {
                     }
                   >
                     <TableCell>
-                      <div className="font-medium text-ink">
+                      <div className="font-medium text-foreground">
                         {holding.symbol}
                       </div>
                       {holding.name && (
@@ -165,13 +165,13 @@ export function HoldingsTable({ onAddHolding }: { onAddHolding: () => void }) {
                     <TableCell className="hidden md:table-cell">
                       <Badge
                         variant="outline"
-                        className="bg-[#eaf2f5] text-[#083458]"
+                        className="bg-secondary text-secondary-foreground"
                       >
                         {ASSET_TYPE_LABELS[holding.asset_type] ??
                           holding.asset_type}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums text-ink">
+                    <TableCell className="text-right font-mono tabular-nums text-foreground">
                       {holding.totalShares.toFixed(
                         holding.totalShares % 1 === 0 ? 0 : 4
                       )}
@@ -187,7 +187,7 @@ export function HoldingsTable({ onAddHolding }: { onAddHolding: () => void }) {
                           )
                         : "—"}
                     </TableCell>
-                    <TableCell className="text-right font-mono tabular-nums text-ink">
+                    <TableCell className="text-right font-mono tabular-nums text-foreground">
                       {formatCurrency(holding.currentValue, holding.currency)}
                     </TableCell>
                     <TableCell className="text-right font-mono tabular-nums text-fog">

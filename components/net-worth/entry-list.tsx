@@ -77,10 +77,10 @@ export function EntryList({ entryType, onAdd, onEdit }: EntryListProps) {
   };
 
   return (
-    <Card className="border-border/50 bg-white shadow-sm">
+    <Card className="border-border/50 bg-card shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle className="font-display text-xl font-medium text-ink">
+          <CardTitle className="font-display text-xl font-medium text-foreground">
             {title}
           </CardTitle>
           <p className="mt-0.5 text-xs text-fog">
@@ -116,7 +116,7 @@ export function EntryList({ entryType, onAdd, onEdit }: EntryListProps) {
               />
             </span>
             <div>
-              <p className="text-sm font-medium text-ink">
+              <p className="text-sm font-medium text-foreground">
                 No {plural} yet
               </p>
               <p className="mt-1 text-sm text-fog">
@@ -144,14 +144,14 @@ export function EntryList({ entryType, onAdd, onEdit }: EntryListProps) {
                   className="transition-colors hover:bg-muted/40"
                 >
                   <TableCell>
-                    <div className="font-medium text-ink">{entry.name}</div>
+                    <div className="font-medium text-foreground">{entry.name}</div>
                     {entry.description && (
                       <div className="text-xs text-fog">
                         {entry.description}
                       </div>
                     )}
                   </TableCell>
-                  <TableCell className="text-right font-mono tabular-nums text-ink">
+                  <TableCell className="text-right font-mono tabular-nums text-foreground">
                     {formatCurrency(entryCurrentValue(entry) ?? 0, currency)}
                   </TableCell>
                   <TableCell>
