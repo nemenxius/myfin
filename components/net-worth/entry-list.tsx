@@ -42,6 +42,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useNetWorth, type EntryType, type EntryWithValues } from "@/hooks/use-net-worth";
 import { usePrimaryCurrency } from "@/hooks/use-primary-currency";
+import { useNetWorthCategories } from "@/hooks/use-net-worth-categories";
+import { CategoryIcon } from "@/components/categories/category-icons";
+import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/format";
 import { entryCurrentValue } from "@/lib/net-worth/math";
 
@@ -54,6 +57,7 @@ interface EntryListProps {
 export function EntryList({ entryType, onAdd, onEdit }: EntryListProps) {
   const { assets, liabilities, deleteEntry, isLoading } = useNetWorth();
   const { currency } = usePrimaryCurrency();
+  const { data: categories } = useNetWorthCategories();
   const [deleting, setDeleting] = useState<EntryWithValues | null>(null);
 
   const entries = entryType === "asset" ? assets : liabilities;
@@ -70,6 +74,14 @@ export function EntryList({ entryType, onAdd, onEdit }: EntryListProps) {
       ),
     [entries]
   );
+
+  const categoryMap = useMemo(() => {
+    const map = new Map<string, { name: string; icon: string }>();
+    for (const c of categories ?? []) {
+      map.set(c.id, { name: c.name, icon: c.icon });
+    }
+    return map;
+  }, [categories]);
 
   const confirmDelete = () => {
     if (deleting) deleteEntry.mutate(deleting.id);
@@ -133,6 +145,7 @@ export function EntryList({ entryType, onAdd, onEdit }: EntryListProps) {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                {entryType === "asset" && <TableHead>Category</TableHead>}
                 <TableHead className="text-right">Value</TableHead>
                 <TableHead className="w-12" />
               </TableRow>
@@ -151,6 +164,25 @@ export function EntryList({ entryType, onAdd, onEdit }: EntryListProps) {
                       </div>
                     )}
                   </TableCell>
+                  {entryType === "asset" && (
+                    <TableCell>
+                      {entry.category_id ? (
+                        <Badge
+                          variant="outline"
+                          className="bg-secondary text-secondary-foreground"
+                        >
+                          <CategoryIcon
+                            slug={
+                              categoryMap.get(entry.category_id)?.icon ?? "Tag"
+                            }
+                            className="h-3.5 w-3.5"
+                          />
+                          {categoryMap.get(entry.category_id)?.name ??
+                            "Uncategorized"}
+                        </Badge>
+                      ) : null}
+                    </TableCell>
+                  )}
                   <TableCell className="text-right font-mono tabular-nums text-foreground">
                     {formatCurrency(entryCurrentValue(entry) ?? 0, currency)}
                   </TableCell>
