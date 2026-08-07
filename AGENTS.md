@@ -50,7 +50,7 @@ hooks/
   use-categories.ts         # Category CRUD
   use-transactions.ts       # Transaction CRUD
   use-portfolio.ts          # Portfolio holdings/transactions CRUD + computed metrics
-  use-net-worth.ts          # Net worth entries CRUD + snapshot queries
+  use-net-worth.ts          # Net worth entries + value-row CRUD
 lib/
   supabase/client.ts        # Browser Supabase client
   supabase/server.ts        # Server Supabase client
@@ -60,7 +60,7 @@ lib/
   ledger.ts                 # Pure ledger/running-balance helper
   pending-display-currency.ts # localStorage helpers for signup currency
   market-data/              # Yahoo/AlphaVantage/CoinGecko providers + TTL cache
-  net-worth/                # Pure net worth totals/series helpers + tests
+  net-worth/                # Pure net worth value-history helpers + tests
   portfolio/                # Pure portfolio math helpers + tests
 supabase/
   migrations/               # Numbered SQL migrations
@@ -145,7 +145,8 @@ Migration state to preserve:
 - `005_add_to_account_id.sql`: `transactions.to_account_id` + transfer RLS policies.
 - `006_profile_defaults.sql`: nullable `profiles.default_account_id` / `default_category_id` for prefilling new transactions. Not yet run remotely; apply via Supabase dashboard SQL editor.
 - `007_portfolio_and_holdings.sql`: portfolio_holdings + holding_transactions tables, RLS, indexes. Not yet run remotely; apply via Supabase dashboard SQL editor.
-- `008_net_worth.sql`: `net_worth_entries` (asset/liability via `entry_type`) + `net_worth_snapshots` tables, RLS, and a `SECURITY DEFINER` trigger (`record_net_worth_snapshot`) that records a snapshot whenever an entry write changes the user's net worth (dedupes when unchanged). Not yet run remotely; apply via Supabase dashboard SQL editor. **Dependency:** 008's `set_updated_at` trigger requires the `set_updated_at()` function from 007 — apply 007 before 008.
+- `008_net_worth.sql`: `net_worth_entries` (asset/liability via `entry_type`) + `net_worth_snapshots` tables, RLS, and a `SECURITY DEFINER` trigger (`record_net_worth_snapshot`) that records a snapshot whenever an entry write changes the user's net worth (dedupes when unchanged). Run remotely on 2026-08-06. **Dependency:** 008's `set_updated_at` trigger requires the `set_updated_at()` function from 007 — apply 007 before 008.
+- `009_net_worth_value_history.sql`: replaces 008's snapshot model — wipes existing 008 test data (TRUNCATE), drops the `net_worth_snapshots` table + `record_net_worth_snapshot()` trigger, drops `net_worth_entries.value`, and adds `net_worth_entry_values` (one dated value per entry/date) with RLS via the parent entry. Not yet run remotely; apply via Supabase dashboard SQL editor.
 
 After schema changes, regenerate types with:
 
@@ -171,7 +172,7 @@ supabase gen types typescript --project-id <PROJECT_ID> --schema public > types/
   charts start at that holding's first transaction, and price history is fetched at a
   per-symbol range (`3m`/`6m`/`1y`/`2y`/`5y`/`max`) derived from the earliest transaction.
 - Proxy migration is complete: `proxy.ts` replaced deprecated `middleware.ts`. Restart dev servers if the old deprecation warning persists.
-- Net Worth (`/dashboard/net-worth`) is fully independent of accounts, transactions, and portfolio data. Users maintain assets and liabilities (single `net_worth_entries` table discriminated by `entry_type`); snapshots are recorded automatically by a DB trigger with net-worth dedupe. Entries are restricted to the profile display currency (no FX conversion); the evolution chart, summary, and month-over-month delta all use the display currency.
+- Net Worth (`/dashboard/net-worth`) is fully independent of accounts, transactions, and portfolio data. Each entry (asset/liability) has a timeline of dated value rows (`net_worth_entry_values`); current value = the latest row, and the evolution chart is reconstructed from all value rows (no snapshots). Entries are restricted to the profile display currency (no FX conversion).
 
 ## 7. Known Follow-Ups
 
@@ -186,7 +187,7 @@ supabase gen types typescript --project-id <PROJECT_ID> --schema public > types/
 - Portfolio: the portfolio chart multiplies each holding's current total shares across its entire history range (spec-mandated model; do not "fix" without updating the spec).
 - Portfolio: holdings created before currency auto-detection may have the wrong stored `currency` (USD default); no backfill was built. Consider a per-holding currency edit action.
 - Market data: Yahoo rate limits; in-memory cache is per server instance. If multi-instance, consider a shared cache.
-- Net worth: if the user changes their display currency, existing entry values are re-labeled (not converted), matching the app-wide no-FX behavior. Snapshot history reflects values as of each recorded write.
+- Net worth: if the user changes their display currency, existing entry values are re-labeled (not converted), matching the app-wide no-FX behavior. Value rows are stored per-entry, so the chart reflects values as of each recorded date.
 
 ## 8. Token-Saving / Ignore Guidance
 
