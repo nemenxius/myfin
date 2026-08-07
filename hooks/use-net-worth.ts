@@ -10,11 +10,10 @@ import {
   monthDelta,
   sortSnapshotsChronologically,
 } from "@/lib/net-worth/math";
-import type { Tables, TablesInsert } from "@/types/database";
+import type { Tables } from "@/types/database";
 
 type NetWorthEntry = Tables<"net_worth_entries">;
 type NetWorthSnapshot = Tables<"net_worth_snapshots">;
-type NetWorthEntryInsert = TablesInsert<"net_worth_entries">;
 
 export type EntryType = "asset" | "liability";
 
