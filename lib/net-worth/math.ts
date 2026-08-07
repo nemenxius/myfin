@@ -88,6 +88,10 @@ function samplePoints<T>(points: T[]): T[] {
   for (let i = 0; i < MAX_POINTS; i++) {
     sampled.push(points[Math.floor(i * step)]);
   }
+  const last = points[points.length - 1];
+  if (sampled[sampled.length - 1] !== last) {
+    sampled.push(last);
+  }
   return sampled;
 }
 
@@ -118,7 +122,7 @@ export function monthDelta(
     .filter((d) => d < monthStart)
     .sort((a, b) => b.localeCompare(a))[0];
   if (!baselineDate) return null;
-  const currentNet = computeNetWorth(entries);
+  const currentNet = computeNetWorth(entries, format(now, "yyyy-MM-dd"));
   const baselineNet = computeNetWorth(entries, baselineDate);
   const amount = currentNet - baselineNet;
   const percent =

@@ -1,8 +1,6 @@
-import { MonthSelector } from "@/components/dashboard/month-selector";
-import { SidePanel } from "@/components/dashboard/side-panel";
 import { SpendingChart } from "@/components/dashboard/spending-chart";
-import { StatCards } from "@/components/dashboard/stat-cards";
-import { TransactionList } from "@/components/transactions/transaction-list";
+import { PortfolioChart } from "@/components/portfolio/portfolio-chart";
+import { NetWorthChart } from "@/components/net-worth/net-worth-chart";
 import { parseMonthParam } from "@/lib/month";
 
 export default async function Dashboard({
@@ -15,26 +13,10 @@ export default async function Dashboard({
 
   return (
     <div className="space-y-6">
-      <div className="animate-fade-in-up">
-        <MonthSelector month={month} />
-        <div className="mt-4">
-          <StatCards month={month} />
-        </div>
-      </div>
-      <div
-        className="grid animate-fade-in-up grid-cols-1 gap-4 lg:grid-cols-3"
-        style={{ animationDelay: "60ms" }}
-      >
-        <div className="lg:col-span-2">
-          <SpendingChart month={month} />
-        </div>
-        <SidePanel month={month} />
-      </div>
-      <div
-        className="animate-fade-in-up"
-        style={{ animationDelay: "120ms" }}
-      >
-        <TransactionList month={month} />
+      <div className="animate-fade-in-up space-y-6" style={{ animationDelay: "60ms" }}>
+        <SpendingChart month={month} />
+        <PortfolioChart />
+        <NetWorthChart />
       </div>
     </div>
   );

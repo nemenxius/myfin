@@ -107,6 +107,11 @@ export function EntryForm({
   const validate = (): boolean => {
     const next: FormErrors = {};
 
+    const uniqueDates = new Set(rows.map((r) => r.as_of));
+    if (uniqueDates.size !== rows.length) {
+      next.rows = "Each date can only appear once.";
+    }
+
     if (!name.trim()) {
       next.name = "Please enter a name.";
     }

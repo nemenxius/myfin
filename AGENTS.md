@@ -144,7 +144,7 @@ Migration state to preserve:
 - `004_category_manage.sql`: update/delete policies for own custom categories. User confirmed this was run remotely on 2026-08-05.
 - `005_add_to_account_id.sql`: `transactions.to_account_id` + transfer RLS policies.
 - `006_profile_defaults.sql`: nullable `profiles.default_account_id` / `default_category_id` for prefilling new transactions. Not yet run remotely; apply via Supabase dashboard SQL editor.
-- `007_portfolio_and_holdings.sql`: portfolio_holdings + holding_transactions tables, RLS, indexes. Not yet run remotely; apply via Supabase dashboard SQL editor.
+- `007_portfolio_and_holdings.sql`: portfolio_holdings + holding_transactions tables, RLS, indexes. Run remotely on 2026-08-06.
 - `008_net_worth.sql`: `net_worth_entries` (asset/liability via `entry_type`) + `net_worth_snapshots` tables, RLS, and a `SECURITY DEFINER` trigger (`record_net_worth_snapshot`) that records a snapshot whenever an entry write changes the user's net worth (dedupes when unchanged). Run remotely on 2026-08-06. **Dependency:** 008's `set_updated_at` trigger requires the `set_updated_at()` function from 007 — apply 007 before 008.
 - `009_net_worth_value_history.sql`: replaces 008's snapshot model — wipes existing 008 test data (TRUNCATE), drops the `net_worth_snapshots` table + `record_net_worth_snapshot()` trigger, drops `net_worth_entries.value`, and adds `net_worth_entry_values` (one dated value per entry/date) with RLS via the parent entry. Not yet run remotely; apply via Supabase dashboard SQL editor.
 

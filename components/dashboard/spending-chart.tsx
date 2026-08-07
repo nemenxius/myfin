@@ -70,7 +70,7 @@ export function SpendingChart({ month }: { month: string }) {
   }, [transactions, month]);
 
   return (
-    <Card className="h-full border-border/50 bg-white shadow-sm">
+    <Card className="border-border/50 bg-white shadow-sm">
       <CardHeader>
         <CardTitle className="font-display text-base font-medium text-ink">
           Monthly spending
@@ -82,7 +82,7 @@ export function SpendingChart({ month }: { month: string }) {
             Loading...
           </div>
         ) : (
-          <div className="min-h-0 w-full flex-1">
+          <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
             <AreaChart
               data={data}

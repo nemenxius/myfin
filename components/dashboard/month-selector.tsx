@@ -6,21 +6,32 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { monthLabel } from "@/lib/month";
 
-export function MonthSelector({ month }: { month: string }) {
+export function MonthSelector({
+  month,
+  maxMonth,
+  basePath = "/dashboard/transactions",
+}: {
+  month: string;
+  maxMonth?: string;
+  basePath?: string;
+}) {
   const router = useRouter();
 
   const currentMonth = format(new Date(), "yyyy-MM");
+  const effectiveMax = maxMonth ?? currentMonth;
   const [year, monthIndex] = month.split("-").map(Number);
   const base = new Date(year, monthIndex - 1, 1);
   const prev = format(addMonths(base, -1), "yyyy-MM");
   const next = format(addMonths(base, 1), "yyyy-MM");
 
+  const canGoNext = next <= effectiveMax;
+
   const navigate = (target: string) => {
-    router.replace(`/dashboard?month=${target}`, { scroll: false });
+    router.replace(`${basePath}?month=${target}`, { scroll: false });
   };
 
   const goToday = () => {
-    router.replace("/dashboard", { scroll: false });
+    router.replace(basePath, { scroll: false });
   };
 
   return (
@@ -41,6 +52,7 @@ export function MonthSelector({ month }: { month: string }) {
         size="icon-sm"
         aria-label="Next month"
         onClick={() => navigate(next)}
+        disabled={!canGoNext}
       >
         <ChevronRight />
       </Button>

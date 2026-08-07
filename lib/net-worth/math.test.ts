@@ -133,6 +133,19 @@ describe("buildNetWorthSeries", () => {
       },
     ]);
   });
+
+  it("downsamples to at most MAX_POINTS+1 points and keeps the most recent date", () => {
+    const rows: ValueRowLike[] = [];
+    for (let i = 0; i < 400; i++) {
+      const d = new Date("2026-01-01T00:00:00Z");
+      d.setUTCDate(d.getUTCDate() + i);
+      rows.push({ as_of: d.toISOString().slice(0, 10), value: i + 1 });
+    }
+    const bank = entry("a", "asset", rows);
+    const series = buildNetWorthSeries([bank]);
+    expect(series.length).toBeLessThanOrEqual(367);
+    expect(series[series.length - 1].value).toBe(400);
+  });
 });
 
 describe("monthDelta", () => {

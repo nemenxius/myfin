@@ -35,6 +35,9 @@ const netWorthKey = ["net-worth"] as const;
 const entriesKey = ["net-worth", "entries"] as const;
 const valuesKey = ["net-worth", "values"] as const;
 
+let tempIdCounter = 0;
+const tempId = (): string => `temp-${++tempIdCounter}-${Date.now()}`;
+
 const fetchEntries = async (): Promise<NetWorthEntry[]> => {
   const { data, error } = await supabaseClient
     .from("net_worth_entries")
@@ -137,7 +140,10 @@ export function useNetWorth() {
           value: Math.max(0, input.initialValue),
         });
 
-      if (valueError) throw valueError;
+      if (valueError) {
+        await supabaseClient.from("net_worth_entries").delete().eq("id", data.id);
+        throw valueError;
+      }
       return data;
     },
     onMutate: async (newEntry) => {
@@ -149,10 +155,10 @@ export function useNetWorth() {
         queryClient.getQueryData<NetWorthValue[]>(valuesKey);
       const user_id = await getCurrentUserId();
       const now = new Date().toISOString();
-      const tempId = `temp-${Date.now()}`;
+      const entryTempId = tempId();
 
       const optimisticEntry: NetWorthEntry = {
-        id: tempId,
+        id: entryTempId,
         user_id,
         entry_type: newEntry.entry_type,
         name: newEntry.name,
@@ -163,8 +169,8 @@ export function useNetWorth() {
       };
 
       const optimisticValue: NetWorthValue = {
-        id: `temp-${Date.now()}-v`,
-        entry_id: tempId,
+        id: tempId(),
+        entry_id: entryTempId,
         as_of: newEntry.initialAsOf ?? todayString(),
         value: Math.max(0, newEntry.initialValue),
         created_at: now,
@@ -307,7 +313,7 @@ export function useNetWorth() {
       const now = new Date().toISOString();
 
       const optimistic: NetWorthValue = {
-        id: `temp-${Date.now()}`,
+        id: tempId(),
         entry_id: entryId,
         as_of: input.as_of,
         value: Math.max(0, input.value),
@@ -399,6 +405,9 @@ export function useNetWorth() {
     onSettled: () => queryClient.invalidateQueries({ queryKey: netWorthKey }),
   });
 
+  const isLoading = entriesQuery.isLoading || valuesQuery.isLoading;
+  const error = entriesQuery.error ?? valuesQuery.error;
+
   return {
     ...entriesQuery,
     entries,
@@ -414,5 +423,7 @@ export function useNetWorth() {
     addValue,
     updateValue,
     deleteValue,
+    isLoading,
+    error,
   };
 }

@@ -3,30 +3,19 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
-import { supabaseClient } from "@/lib/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
-import { useProfile } from "@/hooks/use-profile";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { CURRENCIES } from "@/components/accounts/account-currencies";
-import { CategoryList } from "@/components/categories/category-list";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from "@/hooks/use-auth";
+import { useProfile } from "@/hooks/use-profile";
 import { useAccounts } from "@/hooks/use-accounts";
 import { useCategories } from "@/hooks/use-categories";
+import { supabaseClient } from "@/lib/supabase/client";
+import { CURRENCIES } from "@/components/accounts/account-currencies";
+import { CategoryList } from "@/components/categories/category-list";
+import { AccountList } from "@/components/accounts/account-list";
 
 const currencyOptions = CURRENCIES.map((c) => ({
   value: c.value,
@@ -307,6 +296,18 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       )}
+
+      <Card className="border-border/50 bg-white shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-base font-medium">Accounts</CardTitle>
+          <CardDescription>
+            Manage your accounts and their balances.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AccountList />
+        </CardContent>
+      </Card>
 
       <Card className="border-border/50 bg-white shadow-sm">
         <CardHeader>
