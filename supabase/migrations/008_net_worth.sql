@@ -85,3 +85,8 @@ ALTER FUNCTION record_net_worth_snapshot() SET search_path = public;
 CREATE TRIGGER net_worth_entries_record_snapshot
 AFTER INSERT OR UPDATE OR DELETE ON net_worth_entries
 FOR EACH ROW EXECUTE FUNCTION record_net_worth_snapshot();
+
+-- updated_at trigger
+CREATE TRIGGER net_worth_entries_set_updated_at
+BEFORE UPDATE ON net_worth_entries
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
