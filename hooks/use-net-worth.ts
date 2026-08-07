@@ -160,6 +160,7 @@ export function useNetWorth() {
       const optimisticEntry: NetWorthEntry = {
         id: entryTempId,
         user_id,
+        category_id: null,
         entry_type: newEntry.entry_type,
         name: newEntry.name,
         description: newEntry.description ?? null,

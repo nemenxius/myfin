@@ -78,9 +78,45 @@ export type Database = {
           },
         ]
       }
+      net_worth_categories: {
+        Row: {
+          created_at: string
+          icon: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          icon: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          icon?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "net_worth_categories_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       net_worth_entries: {
         Row: {
           created_at: string
+          category_id: string | null
           currency: string
           description: string | null
           entry_type: string
@@ -91,6 +127,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          category_id?: string | null
           currency?: string
           description?: string | null
           entry_type: string
@@ -101,6 +138,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          category_id?: string | null
           currency?: string
           description?: string | null
           entry_type?: string
@@ -110,6 +148,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "net_worth_entries_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "net_worth_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "net_worth_entries_user_id_fkey"
             columns: ["user_id"]
