@@ -22,6 +22,7 @@ export type EntryInput = {
   entry_type: EntryType;
   name: string;
   description?: string | null;
+  category_id?: string | null;
   initialValue: number;
   initialAsOf?: string;
 };
@@ -124,6 +125,7 @@ export function useNetWorth() {
           entry_type: input.entry_type,
           name: input.name,
           description: input.description ?? null,
+          category_id: input.category_id ?? null,
           currency: currency || "USD",
           user_id,
         })
@@ -160,10 +162,10 @@ export function useNetWorth() {
       const optimisticEntry: NetWorthEntry = {
         id: entryTempId,
         user_id,
-        category_id: null,
         entry_type: newEntry.entry_type,
         name: newEntry.name,
         description: newEntry.description ?? null,
+        category_id: newEntry.category_id ?? null,
         currency: currency || "USD",
         created_at: now,
         updated_at: now,
@@ -208,6 +210,7 @@ export function useNetWorth() {
       id: string;
       name?: string;
       description?: string | null;
+      category_id?: string | null;
     }): Promise<NetWorthEntry> => {
       const { data, error } = await supabaseClient
         .from("net_worth_entries")
@@ -215,6 +218,9 @@ export function useNetWorth() {
           ...(rest.name !== undefined ? { name: rest.name } : {}),
           ...(rest.description !== undefined
             ? { description: rest.description ?? null }
+            : {}),
+          ...(rest.category_id !== undefined
+            ? { category_id: rest.category_id ?? null }
             : {}),
         })
         .eq("id", id)
@@ -237,6 +243,9 @@ export function useNetWorth() {
             ...(rest.name !== undefined ? { name: rest.name } : {}),
             ...(rest.description !== undefined
               ? { description: rest.description ?? null }
+              : {}),
+            ...(rest.category_id !== undefined
+              ? { category_id: rest.category_id ?? null }
               : {}),
           };
         })
