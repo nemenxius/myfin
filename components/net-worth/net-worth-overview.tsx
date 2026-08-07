@@ -3,20 +3,17 @@
 import { useState } from "react";
 import { Plus, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useNetWorth, type EntryType } from "@/hooks/use-net-worth";
+import { useNetWorth, type EntryType, type EntryWithValues } from "@/hooks/use-net-worth";
 import { NetWorthSummary } from "./net-worth-summary";
 import { NetWorthChart } from "./net-worth-chart";
 import { EntryList } from "./entry-list";
 import { EntryForm } from "./entry-form";
-import type { Tables } from "@/types/database";
-
-type NetWorthEntry = Tables<"net_worth_entries">;
 
 export function NetWorthOverview() {
   const { assets, liabilities, isLoading } = useNetWorth();
   const [formOpen, setFormOpen] = useState(false);
   const [formType, setFormType] = useState<EntryType>("asset");
-  const [editing, setEditing] = useState<NetWorthEntry | null>(null);
+  const [editing, setEditing] = useState<EntryWithValues | null>(null);
 
   const isEmpty = !isLoading && assets.length === 0 && liabilities.length === 0;
 
@@ -26,7 +23,7 @@ export function NetWorthOverview() {
     setFormOpen(true);
   };
 
-  const openEdit = (type: EntryType) => (entry: NetWorthEntry) => {
+  const openEdit = (type: EntryType) => (entry: EntryWithValues) => {
     setFormType(type);
     setEditing(entry);
     setFormOpen(true);

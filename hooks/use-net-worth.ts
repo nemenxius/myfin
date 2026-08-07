@@ -8,25 +8,32 @@ import {
   buildNetWorthSeries,
   computeTotals,
   monthDelta,
-  sortSnapshotsChronologically,
 } from "@/lib/net-worth/math";
 import type { Tables } from "@/types/database";
 
 type NetWorthEntry = Tables<"net_worth_entries">;
-type NetWorthSnapshot = Tables<"net_worth_snapshots">;
+type NetWorthValue = Tables<"net_worth_entry_values">;
 
 export type EntryType = "asset" | "liability";
+
+export type EntryWithValues = NetWorthEntry & { values: NetWorthValue[] };
 
 export type EntryInput = {
   entry_type: EntryType;
   name: string;
   description?: string | null;
+  initialValue: number;
+  initialAsOf?: string;
+};
+
+export type ValueInput = {
+  as_of: string;
   value: number;
 };
 
 const netWorthKey = ["net-worth"] as const;
 const entriesKey = ["net-worth", "entries"] as const;
-const snapshotsKey = ["net-worth", "snapshots"] as const;
+const valuesKey = ["net-worth", "values"] as const;
 
 const fetchEntries = async (): Promise<NetWorthEntry[]> => {
   const { data, error } = await supabaseClient
@@ -38,11 +45,11 @@ const fetchEntries = async (): Promise<NetWorthEntry[]> => {
   return data;
 };
 
-const fetchSnapshots = async (): Promise<NetWorthSnapshot[]> => {
+const fetchValues = async (): Promise<NetWorthValue[]> => {
   const { data, error } = await supabaseClient
-    .from("net_worth_snapshots")
+    .from("net_worth_entry_values")
     .select("*")
-    .order("recorded_at", { ascending: true });
+    .order("as_of", { ascending: true });
 
   if (error) throw error;
   return data;
@@ -56,6 +63,8 @@ const getCurrentUserId = async (): Promise<string> => {
   return user.id;
 };
 
+const todayString = (): string => new Date().toISOString().slice(0, 10);
+
 export function useNetWorth() {
   const queryClient = useQueryClient();
   const { currency } = usePrimaryCurrency();
@@ -65,17 +74,28 @@ export function useNetWorth() {
     queryFn: fetchEntries,
   });
 
-  const snapshotsQuery = useQuery({
-    queryKey: snapshotsKey,
-    queryFn: fetchSnapshots,
+  const valuesQuery = useQuery({
+    queryKey: valuesKey,
+    queryFn: fetchValues,
   });
 
-  const entries = entriesQuery.data ?? [];
+  const rawEntries = entriesQuery.data ?? [];
+  const rawValues = valuesQuery.data ?? [];
 
-  const snapshots = useMemo(
-    () => sortSnapshotsChronologically(snapshotsQuery.data ?? []),
-    [snapshotsQuery.data]
-  );
+  const entries = useMemo<EntryWithValues[]>(() => {
+    const byEntry = new Map<string, NetWorthValue[]>();
+    for (const v of rawValues) {
+      const list = byEntry.get(v.entry_id) ?? [];
+      list.push(v);
+      byEntry.set(v.entry_id, list);
+    }
+    return rawEntries.map((entry) => ({
+      ...entry,
+      values: (byEntry.get(entry.id) ?? []).sort((a, b) =>
+        a.as_of.localeCompare(b.as_of)
+      ),
+    }));
+  }, [rawEntries, rawValues]);
 
   const assets = useMemo(
     () => entries.filter((entry) => entry.entry_type === "asset"),
@@ -89,8 +109,8 @@ export function useNetWorth() {
 
   const totals = useMemo(() => computeTotals(entries), [entries]);
   const netWorth = totals.totalAssets - totals.totalLiabilities;
-  const netWorthSeries = useMemo(() => buildNetWorthSeries(snapshots), [snapshots]);
-  const delta = useMemo(() => monthDelta(netWorth, snapshots), [netWorth, snapshots]);
+  const netWorthSeries = useMemo(() => buildNetWorthSeries(entries), [entries]);
+  const delta = useMemo(() => monthDelta(entries), [entries]);
 
   const createEntry = useMutation({
     mutationFn: async (input: EntryInput): Promise<NetWorthEntry> => {
@@ -101,7 +121,6 @@ export function useNetWorth() {
           entry_type: input.entry_type,
           name: input.name,
           description: input.description ?? null,
-          value: Math.max(0, input.value),
           currency: currency || "USD",
           user_id,
         })
@@ -109,37 +128,66 @@ export function useNetWorth() {
         .single();
 
       if (error) throw error;
+
+      const { error: valueError } = await supabaseClient
+        .from("net_worth_entry_values")
+        .insert({
+          entry_id: data.id,
+          as_of: input.initialAsOf ?? todayString(),
+          value: Math.max(0, input.initialValue),
+        });
+
+      if (valueError) throw valueError;
       return data;
     },
     onMutate: async (newEntry) => {
       await queryClient.cancelQueries({ queryKey: netWorthKey });
 
-      const previous = queryClient.getQueryData<NetWorthEntry[]>(entriesKey);
+      const previousEntries =
+        queryClient.getQueryData<NetWorthEntry[]>(entriesKey);
+      const previousValues =
+        queryClient.getQueryData<NetWorthValue[]>(valuesKey);
       const user_id = await getCurrentUserId();
       const now = new Date().toISOString();
+      const tempId = `temp-${Date.now()}`;
 
-      const optimistic: NetWorthEntry = {
-        id: `temp-${Date.now()}`,
+      const optimisticEntry: NetWorthEntry = {
+        id: tempId,
         user_id,
         entry_type: newEntry.entry_type,
         name: newEntry.name,
         description: newEntry.description ?? null,
-        value: Math.max(0, newEntry.value),
         currency: currency || "USD",
+        created_at: now,
+        updated_at: now,
+      };
+
+      const optimisticValue: NetWorthValue = {
+        id: `temp-${Date.now()}-v`,
+        entry_id: tempId,
+        as_of: newEntry.initialAsOf ?? todayString(),
+        value: Math.max(0, newEntry.initialValue),
         created_at: now,
         updated_at: now,
       };
 
       queryClient.setQueryData<NetWorthEntry[]>(entriesKey, (old) => [
         ...(old ?? []),
-        optimistic,
+        optimisticEntry,
+      ]);
+      queryClient.setQueryData<NetWorthValue[]>(valuesKey, (old) => [
+        ...(old ?? []),
+        optimisticValue,
       ]);
 
-      return { previous };
+      return { previousEntries, previousValues };
     },
     onError: (_error, _variables, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(entriesKey, context.previous);
+      if (context?.previousEntries) {
+        queryClient.setQueryData(entriesKey, context.previousEntries);
+      }
+      if (context?.previousValues) {
+        queryClient.setQueryData(valuesKey, context.previousValues);
       }
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: netWorthKey }),
@@ -149,14 +197,15 @@ export function useNetWorth() {
     mutationFn: async ({
       id,
       ...rest
-    }: { id: string } & Partial<EntryInput>): Promise<NetWorthEntry> => {
+    }: {
+      id: string;
+      name?: string;
+      description?: string | null;
+    }): Promise<NetWorthEntry> => {
       const { data, error } = await supabaseClient
         .from("net_worth_entries")
         .update({
-          ...rest,
-          ...(rest.value !== undefined
-            ? { value: Math.max(0, rest.value) }
-            : {}),
+          ...(rest.name !== undefined ? { name: rest.name } : {}),
           ...(rest.description !== undefined
             ? { description: rest.description ?? null }
             : {}),
@@ -178,10 +227,7 @@ export function useNetWorth() {
           if (entry.id !== id) return entry;
           return {
             ...entry,
-            ...rest,
-            ...(rest.value !== undefined
-              ? { value: Math.max(0, rest.value) }
-              : {}),
+            ...(rest.name !== undefined ? { name: rest.name } : {}),
             ...(rest.description !== undefined
               ? { description: rest.description ?? null }
               : {}),
@@ -211,17 +257,143 @@ export function useNetWorth() {
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: netWorthKey });
 
-      const previous = queryClient.getQueryData<NetWorthEntry[]>(entriesKey);
+      const previousEntries =
+        queryClient.getQueryData<NetWorthEntry[]>(entriesKey);
+      const previousValues =
+        queryClient.getQueryData<NetWorthValue[]>(valuesKey);
 
       queryClient.setQueryData<NetWorthEntry[]>(entriesKey, (old) =>
         (old ?? []).filter((entry) => entry.id !== id)
+      );
+      queryClient.setQueryData<NetWorthValue[]>(valuesKey, (old) =>
+        (old ?? []).filter((v) => v.entry_id !== id)
+      );
+
+      return { previousEntries, previousValues };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousEntries) {
+        queryClient.setQueryData(entriesKey, context.previousEntries);
+      }
+      if (context?.previousValues) {
+        queryClient.setQueryData(valuesKey, context.previousValues);
+      }
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: netWorthKey }),
+  });
+
+  const addValue = useMutation({
+    mutationFn: async ({
+      entryId,
+      ...input
+    }: { entryId: string } & ValueInput): Promise<NetWorthValue> => {
+      const { data, error } = await supabaseClient
+        .from("net_worth_entry_values")
+        .insert({
+          entry_id: entryId,
+          as_of: input.as_of,
+          value: Math.max(0, input.value),
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onMutate: async ({ entryId, ...input }) => {
+      await queryClient.cancelQueries({ queryKey: netWorthKey });
+
+      const previous = queryClient.getQueryData<NetWorthValue[]>(valuesKey);
+      const now = new Date().toISOString();
+
+      const optimistic: NetWorthValue = {
+        id: `temp-${Date.now()}`,
+        entry_id: entryId,
+        as_of: input.as_of,
+        value: Math.max(0, input.value),
+        created_at: now,
+        updated_at: now,
+      };
+
+      queryClient.setQueryData<NetWorthValue[]>(valuesKey, (old) => [
+        ...(old ?? []),
+        optimistic,
+      ]);
+
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(valuesKey, context.previous);
+      }
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: netWorthKey }),
+  });
+
+  const updateValue = useMutation({
+    mutationFn: async ({
+      id,
+      ...input
+    }: { id: string } & ValueInput): Promise<NetWorthValue> => {
+      const { data, error } = await supabaseClient
+        .from("net_worth_entry_values")
+        .update({
+          as_of: input.as_of,
+          value: Math.max(0, input.value),
+        })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onMutate: async ({ id, ...input }) => {
+      await queryClient.cancelQueries({ queryKey: netWorthKey });
+
+      const previous = queryClient.getQueryData<NetWorthValue[]>(valuesKey);
+
+      queryClient.setQueryData<NetWorthValue[]>(valuesKey, (old) =>
+        (old ?? []).map((v) =>
+          v.id === id
+            ? { ...v, as_of: input.as_of, value: Math.max(0, input.value) }
+            : v
+        )
       );
 
       return { previous };
     },
     onError: (_error, _variables, context) => {
       if (context?.previous) {
-        queryClient.setQueryData(entriesKey, context.previous);
+        queryClient.setQueryData(valuesKey, context.previous);
+      }
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: netWorthKey }),
+  });
+
+  const deleteValue = useMutation({
+    mutationFn: async (id: string): Promise<void> => {
+      const { error } = await supabaseClient
+        .from("net_worth_entry_values")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: netWorthKey });
+
+      const previous = queryClient.getQueryData<NetWorthValue[]>(valuesKey);
+
+      queryClient.setQueryData<NetWorthValue[]>(valuesKey, (old) =>
+        (old ?? []).filter((v) => v.id !== id)
+      );
+
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(valuesKey, context.previous);
       }
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: netWorthKey }),
@@ -232,7 +404,6 @@ export function useNetWorth() {
     entries,
     assets,
     liabilities,
-    snapshots,
     totals,
     netWorth,
     netWorthSeries,
@@ -240,5 +411,8 @@ export function useNetWorth() {
     createEntry,
     updateEntry,
     deleteEntry,
+    addValue,
+    updateValue,
+    deleteValue,
   };
 }

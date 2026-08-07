@@ -40,23 +40,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useNetWorth, type EntryType } from "@/hooks/use-net-worth";
+import { useNetWorth, type EntryType, type EntryWithValues } from "@/hooks/use-net-worth";
 import { usePrimaryCurrency } from "@/hooks/use-primary-currency";
 import { formatCurrency } from "@/lib/format";
-import type { Tables } from "@/types/database";
-
-type NetWorthEntry = Tables<"net_worth_entries">;
+import { entryCurrentValue } from "@/lib/net-worth/math";
 
 interface EntryListProps {
   entryType: EntryType;
   onAdd: () => void;
-  onEdit: (entry: NetWorthEntry) => void;
+  onEdit: (entry: EntryWithValues) => void;
 }
 
 export function EntryList({ entryType, onAdd, onEdit }: EntryListProps) {
   const { assets, liabilities, deleteEntry, isLoading } = useNetWorth();
   const { currency } = usePrimaryCurrency();
-  const [deleting, setDeleting] = useState<NetWorthEntry | null>(null);
+  const [deleting, setDeleting] = useState<EntryWithValues | null>(null);
 
   const entries = entryType === "asset" ? assets : liabilities;
   const title = entryType === "asset" ? "Assets" : "Liabilities";
@@ -65,7 +63,11 @@ export function EntryList({ entryType, onAdd, onEdit }: EntryListProps) {
   const Icon = entryType === "asset" ? TrendingUp : TrendingDown;
 
   const total = useMemo(
-    () => entries.reduce((sum, entry) => sum + entry.value, 0),
+    () =>
+      entries.reduce(
+        (sum, entry) => sum + (entryCurrentValue(entry) ?? 0),
+        0
+      ),
     [entries]
   );
 
@@ -150,7 +152,7 @@ export function EntryList({ entryType, onAdd, onEdit }: EntryListProps) {
                     )}
                   </TableCell>
                   <TableCell className="text-right font-mono tabular-nums text-ink">
-                    {formatCurrency(entry.value, currency)}
+                    {formatCurrency(entryCurrentValue(entry) ?? 0, currency)}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>

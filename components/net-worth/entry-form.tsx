@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useNetWorth, type EntryType } from "@/hooks/use-net-worth";
+import { useNetWorth, type EntryType, type EntryWithValues } from "@/hooks/use-net-worth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,15 +12,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { Tables } from "@/types/database";
-
-type NetWorthEntry = Tables<"net_worth_entries">;
 
 interface EntryFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   entryType: EntryType;
-  entry?: NetWorthEntry | null;
+  entry?: EntryWithValues | null;
 }
 
 interface FormErrors {
@@ -57,7 +54,9 @@ export function EntryForm({
     if (entry) {
       setName(entry.name);
       setDescription(entry.description ?? "");
-      setValue(String(entry.value));
+      setValue(
+        String(entry.values.length > 0 ? entry.values[entry.values.length - 1].value : "")
+      );
     } else {
       setName("");
       setDescription("");
@@ -88,14 +87,17 @@ export function EntryForm({
     const payload = {
       name: name.trim(),
       description: description.trim() || null,
-      value: Number(value),
     };
 
     try {
       if (entry) {
         await updateEntry.mutateAsync({ id: entry.id, ...payload });
       } else {
-        await createEntry.mutateAsync({ entry_type: entryType, ...payload });
+        await createEntry.mutateAsync({
+          entry_type: entryType,
+          ...payload,
+          initialValue: Number(value),
+        });
       }
       onOpenChange(false);
     } catch (err) {

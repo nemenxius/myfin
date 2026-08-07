@@ -88,7 +88,6 @@ export type Database = {
           name: string
           updated_at: string
           user_id: string
-          value: number
         }
         Insert: {
           created_at?: string
@@ -99,7 +98,6 @@ export type Database = {
           name: string
           updated_at?: string
           user_id: string
-          value: number
         }
         Update: {
           created_at?: string
@@ -110,7 +108,6 @@ export type Database = {
           name?: string
           updated_at?: string
           user_id?: string
-          value?: number
         }
         Relationships: [
           {
@@ -122,37 +119,37 @@ export type Database = {
           },
         ]
       }
-      net_worth_snapshots: {
+      net_worth_entry_values: {
         Row: {
+          as_of: string
+          created_at: string
+          entry_id: string
           id: string
-          net_worth: number
-          recorded_at: string
-          total_assets: number
-          total_liabilities: number
-          user_id: string
+          updated_at: string
+          value: number
         }
         Insert: {
+          as_of: string
+          created_at?: string
+          entry_id: string
           id?: string
-          net_worth: number
-          recorded_at?: string
-          total_assets: number
-          total_liabilities: number
-          user_id: string
+          updated_at?: string
+          value: number
         }
         Update: {
+          as_of?: string
+          created_at?: string
+          entry_id?: string
           id?: string
-          net_worth?: number
-          recorded_at?: string
-          total_assets?: number
-          total_liabilities?: number
-          user_id?: string
+          updated_at?: string
+          value?: number
         }
         Relationships: [
           {
-            foreignKeyName: "net_worth_snapshots_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "net_worth_entry_values_entry_id_fkey"
+            columns: ["entry_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "net_worth_entries"
             referencedColumns: ["id"]
           },
         ]
