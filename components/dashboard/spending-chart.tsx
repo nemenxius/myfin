@@ -31,7 +31,7 @@ function CustomTooltip({
   if (!active || !payload || payload.length === 0) return null;
 
   return (
-    <div className="rounded-lg border border-border/60 bg-white/90 px-3 py-2 shadow-md backdrop-blur">
+    <div className="rounded-lg border border-border/60 bg-popover px-3 py-2 shadow-md">
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <p className="font-mono text-sm font-semibold tabular-nums text-foreground">
         {formatCurrency(payload[0].value, currency)}
@@ -70,9 +70,9 @@ export function SpendingChart({ month }: { month: string }) {
   }, [transactions, month]);
 
   return (
-    <Card className="border-border/50 bg-white shadow-sm">
+    <Card className="border-border/50 bg-card shadow-sm">
       <CardHeader>
-        <CardTitle className="font-display text-base font-medium text-ink">
+        <CardTitle className="font-display text-base font-medium text-foreground">
           Monthly spending
         </CardTitle>
       </CardHeader>
@@ -97,20 +97,20 @@ export function SpendingChart({ month }: { month: string }) {
               <CartesianGrid
                 strokeDasharray="3 3"
                 vertical={false}
-                stroke="#e6eaee"
+                stroke="hsl(var(--border))"
               />
               <XAxis
                 dataKey="day"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 11, fill: "#6c7a83" }}
+                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                 dy={6}
                 interval={Math.max(1, Math.floor(data.length / 8))}
               />
               <YAxis
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 12, fill: "#6c7a83", fontFamily: "var(--font-mono)" }}
+                tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))", fontFamily: "var(--font-mono)" }}
                 tickFormatter={(value: number) =>
                   `${getCurrencySymbol(currency)}${value}`
                 }

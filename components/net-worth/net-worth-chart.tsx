@@ -33,7 +33,7 @@ function ChartTooltip({
   if (!active || !payload || payload.length === 0) return null;
   const point = payload[0].payload;
   return (
-    <div className="rounded-lg border border-border/60 bg-white/90 px-3 py-2 shadow-md backdrop-blur">
+    <div className="rounded-lg border border-border/60 bg-popover px-3 py-2 shadow-md">
       <p className="text-xs font-medium text-muted-foreground">{point.label}</p>
       <p className="font-mono text-sm font-semibold tabular-nums text-foreground">
         {formatCurrency(point.value, currency)}
@@ -51,9 +51,9 @@ export function NetWorthChart() {
   const { currency } = usePrimaryCurrency();
 
   return (
-    <Card className="border-border/50 bg-white shadow-sm">
+    <Card className="border-border/50 bg-card shadow-sm">
       <CardHeader>
-        <CardTitle className="font-display text-base font-medium text-ink">
+        <CardTitle className="font-display text-base font-medium text-foreground">
           Net Worth Evolution
         </CardTitle>
       </CardHeader>
@@ -89,13 +89,13 @@ export function NetWorthChart() {
                 <CartesianGrid
                   strokeDasharray="3 3"
                   vertical={false}
-                  stroke="#e6eaee"
+                  stroke="hsl(var(--border))"
                 />
                 <XAxis
                   dataKey="label"
                   tickLine={false}
                   axisLine={false}
-                  tick={{ fontSize: 11, fill: "#6c7a83" }}
+                  tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                   dy={6}
                   minTickGap={40}
                 />
@@ -104,7 +104,7 @@ export function NetWorthChart() {
                   axisLine={false}
                   tick={{
                     fontSize: 12,
-                    fill: "#6c7a83",
+                    fill: "hsl(var(--muted-foreground))",
                     fontFamily: "var(--font-mono)",
                   }}
                   tickFormatter={(value: number) =>
