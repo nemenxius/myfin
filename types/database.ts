@@ -78,6 +78,85 @@ export type Database = {
           },
         ]
       }
+      net_worth_entries: {
+        Row: {
+          created_at: string
+          currency: string
+          description: string | null
+          entry_type: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          description?: string | null
+          entry_type: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+          value: number
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          description?: string | null
+          entry_type?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "net_worth_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      net_worth_snapshots: {
+        Row: {
+          id: string
+          net_worth: number
+          recorded_at: string
+          total_assets: number
+          total_liabilities: number
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          net_worth: number
+          recorded_at?: string
+          total_assets: number
+          total_liabilities: number
+          user_id: string
+        }
+        Update: {
+          id?: string
+          net_worth?: number
+          recorded_at?: string
+          total_assets?: number
+          total_liabilities?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "net_worth_snapshots_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           default_account_id: string | null
