@@ -1,20 +1,19 @@
 import { format, startOfMonth } from "date-fns";
 
-export interface NetWorthEntryLike {
-  entry_type: string;
+export interface ValueRowLike {
+  as_of: string;
   value: number;
+}
+
+export interface NetWorthEntryLike {
+  id: string;
+  entry_type: string;
+  values: ValueRowLike[];
 }
 
 export interface NetWorthTotals {
   totalAssets: number;
   totalLiabilities: number;
-}
-
-export interface NetWorthSnapshotLike {
-  recorded_at: string;
-  total_assets: number;
-  total_liabilities: number;
-  net_worth: number;
 }
 
 export interface NetWorthSeriesPoint {
@@ -31,38 +30,55 @@ export interface MonthDelta {
 
 const MAX_POINTS = 366;
 
-export function computeTotals(entries: NetWorthEntryLike[]): NetWorthTotals {
+const todayString = (): string => format(new Date(), "yyyy-MM-dd");
+
+export function entryCurrentValue(entry: NetWorthEntryLike): number | null {
+  if (entry.values.length === 0) return null;
+  const latest = [...entry.values].sort((a, b) =>
+    b.as_of.localeCompare(a.as_of)
+  )[0];
+  return latest.value;
+}
+
+export function valueAsOf(
+  entry: NetWorthEntryLike,
+  date: string
+): number | null {
+  const applicable = entry.values
+    .filter((v) => v.as_of <= date)
+    .sort((a, b) => b.as_of.localeCompare(a.as_of))[0];
+  return applicable ? applicable.value : null;
+}
+
+export function computeTotals(
+  entries: NetWorthEntryLike[],
+  asOf: string = todayString()
+): NetWorthTotals {
   let totalAssets = 0;
   let totalLiabilities = 0;
   for (const entry of entries) {
-    if (entry.entry_type === "asset") totalAssets += entry.value;
-    else if (entry.entry_type === "liability") totalLiabilities += entry.value;
+    const v = valueAsOf(entry, asOf);
+    if (v === null) continue;
+    if (entry.entry_type === "asset") totalAssets += v;
+    else if (entry.entry_type === "liability") totalLiabilities += v;
   }
   return { totalAssets, totalLiabilities };
 }
 
-export function computeNetWorth(entries: NetWorthEntryLike[]): number {
-  const { totalAssets, totalLiabilities } = computeTotals(entries);
+export function computeNetWorth(
+  entries: NetWorthEntryLike[],
+  asOf: string = todayString()
+): number {
+  const { totalAssets, totalLiabilities } = computeTotals(entries, asOf);
   return totalAssets - totalLiabilities;
 }
 
-export function shouldRecordSnapshot(
-  latest: { net_worth: number } | null,
-  totalAssets: number,
-  totalLiabilities: number
-): boolean {
-  const currentNet = totalAssets - totalLiabilities;
-  return latest === null || latest.net_worth !== currentNet;
-}
-
-export function sortSnapshotsChronologically<
-  T extends { recorded_at: string; id: string },
->(snapshots: T[]): T[] {
-  return [...snapshots].sort((a, b) => {
-    const cmp = a.recorded_at.localeCompare(b.recorded_at);
-    if (cmp !== 0) return cmp;
-    return a.id.localeCompare(b.id);
-  });
+export function collectValueDates(entries: NetWorthEntryLike[]): string[] {
+  const dates = new Set<string>();
+  for (const entry of entries) {
+    for (const v of entry.values) dates.add(v.as_of);
+  }
+  return [...dates].sort((a, b) => a.localeCompare(b));
 }
 
 function samplePoints<T>(points: T[]): T[] {
@@ -76,39 +92,36 @@ function samplePoints<T>(points: T[]): T[] {
 }
 
 export function buildNetWorthSeries(
-  snapshots: NetWorthSnapshotLike[]
+  entries: NetWorthEntryLike[]
 ): NetWorthSeriesPoint[] {
-  const sorted = [...snapshots].sort((a, b) =>
-    a.recorded_at.localeCompare(b.recorded_at)
-  );
-  return samplePoints(sorted).map((s) => {
-    const day = s.recorded_at.slice(0, 10);
+  const dates = collectValueDates(entries);
+  return samplePoints(dates).map((date) => {
+    const totals = computeTotals(entries, date);
     return {
-      label: new Date(`${day}T00:00:00`).toLocaleDateString("en-US", {
+      label: new Date(`${date}T00:00:00`).toLocaleDateString("en-US", {
         month: "short",
         year: "numeric",
       }),
-      value: s.net_worth,
-      assets: s.total_assets,
-      liabilities: s.total_liabilities,
+      value: totals.totalAssets - totals.totalLiabilities,
+      assets: totals.totalAssets,
+      liabilities: totals.totalLiabilities,
     };
   });
 }
 
 export function monthDelta(
-  netWorth: number,
-  snapshots: NetWorthSnapshotLike[],
+  entries: NetWorthEntryLike[],
   now: Date = new Date()
 ): MonthDelta | null {
   const monthStart = format(startOfMonth(now), "yyyy-MM-dd");
-  const baseline = [...snapshots]
-    .filter((s) => s.recorded_at.slice(0, 10) < monthStart)
-    .sort((a, b) => b.recorded_at.localeCompare(a.recorded_at))[0];
-  if (!baseline) return null;
-  const amount = netWorth - baseline.net_worth;
+  const baselineDate = collectValueDates(entries)
+    .filter((d) => d < monthStart)
+    .sort((a, b) => b.localeCompare(a))[0];
+  if (!baselineDate) return null;
+  const currentNet = computeNetWorth(entries);
+  const baselineNet = computeNetWorth(entries, baselineDate);
+  const amount = currentNet - baselineNet;
   const percent =
-    baseline.net_worth !== 0
-      ? (amount / Math.abs(baseline.net_worth)) * 100
-      : null;
+    baselineNet !== 0 ? (amount / Math.abs(baselineNet)) * 100 : null;
   return { amount, percent };
 }

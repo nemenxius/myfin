@@ -1,132 +1,161 @@
 import { describe, expect, it } from "vitest";
 import {
   buildNetWorthSeries,
+  collectValueDates,
   computeNetWorth,
   computeTotals,
+  entryCurrentValue,
   monthDelta,
-  shouldRecordSnapshot,
-  sortSnapshotsChronologically,
+  valueAsOf,
   type NetWorthEntryLike,
-  type NetWorthSnapshotLike,
+  type ValueRowLike,
 } from "./math";
 
-const entry = (
-  entry_type: "asset" | "liability",
-  value: number
-): NetWorthEntryLike => ({ entry_type, value });
+const value = (as_of: string, value: number): ValueRowLike => ({ as_of, value });
 
-const snapshot = (
-  recorded_at: string,
-  total_assets: number,
-  total_liabilities: number,
-  net_worth: number
-): NetWorthSnapshotLike => ({ recorded_at, total_assets, total_liabilities, net_worth });
+const entry = (
+  id: string,
+  entry_type: "asset" | "liability",
+  values: ValueRowLike[]
+): NetWorthEntryLike => ({ id, entry_type, values });
+
+describe("entryCurrentValue", () => {
+  it("returns null when the entry has no value rows", () => {
+    expect(entryCurrentValue(entry("a", "asset", []))).toBeNull();
+  });
+
+  it("returns the latest dated value", () => {
+    const e = entry("a", "asset", [
+      value("2026-05-01", 20000),
+      value("2026-06-01", 21000),
+    ]);
+    expect(entryCurrentValue(e)).toBe(21000);
+  });
+});
+
+describe("valueAsOf", () => {
+  it("returns the value at or before the date", () => {
+    const e = entry("a", "asset", [
+      value("2026-05-01", 20000),
+      value("2026-06-01", 21000),
+    ]);
+    expect(valueAsOf(e, "2026-05-15")).toBe(20000);
+    expect(valueAsOf(e, "2026-06-15")).toBe(21000);
+  });
+
+  it("returns null before the first dated value", () => {
+    const e = entry("a", "asset", [value("2026-06-01", 21000)]);
+    expect(valueAsOf(e, "2026-04-01")).toBeNull();
+  });
+});
 
 describe("computeTotals", () => {
   it("returns zero totals for no entries", () => {
     expect(computeTotals([])).toEqual({ totalAssets: 0, totalLiabilities: 0 });
   });
 
-  it("sums assets and liabilities separately", () => {
-    const entries = [
-      entry("asset", 200000),
-      entry("asset", 15000),
-      entry("liability", 150000),
-      entry("liability", 12550),
-    ];
-    expect(computeTotals(entries)).toEqual({
-      totalAssets: 215000,
-      totalLiabilities: 162550,
+  it("sums each entry's latest value at or before the given date", () => {
+    const bank = entry("a", "asset", [
+      value("2026-05-01", 20000),
+      value("2026-06-01", 21000),
+    ]);
+    const loan = entry("l", "liability", [
+      value("2026-05-01", 15000),
+      value("2026-06-01", 16000),
+    ]);
+    expect(computeTotals([bank, loan], "2026-05-15")).toEqual({
+      totalAssets: 20000,
+      totalLiabilities: 15000,
+    });
+    expect(computeTotals([bank, loan], "2026-06-15")).toEqual({
+      totalAssets: 21000,
+      totalLiabilities: 16000,
+    });
+  });
+
+  it("ignores entries with no applicable value as of the date", () => {
+    const bank = entry("a", "asset", [value("2026-06-01", 21000)]);
+    expect(computeTotals([bank], "2026-04-01")).toEqual({
+      totalAssets: 0,
+      totalLiabilities: 0,
+    });
+  });
+
+  it("defaults to today when no asOf is given", () => {
+    const bank = entry("a", "asset", [value("2024-01-01", 1000)]);
+    expect(computeTotals([bank])).toEqual({
+      totalAssets: 1000,
+      totalLiabilities: 0,
     });
   });
 });
 
 describe("computeNetWorth", () => {
-  it("computes assets minus liabilities", () => {
-    const entries = [entry("asset", 215000), entry("liability", 142550)];
-    expect(computeNetWorth(entries)).toBe(72450);
-  });
-
-  it("is positive with zero liabilities", () => {
-    expect(computeNetWorth([entry("asset", 100)])).toBe(100);
-  });
-
-  it("is negative with zero assets", () => {
-    expect(computeNetWorth([entry("liability", 100)])).toBe(-100);
-  });
-
-  it("handles multiple assets and liabilities", () => {
-    const entries = [
-      entry("asset", 200000),
-      entry("asset", 15000),
-      entry("asset", 10000),
-      entry("liability", 150000),
-      entry("liability", 12000),
-    ];
-    expect(computeNetWorth(entries)).toBe(63000);
+  it("computes assets minus liabilities as of a date", () => {
+    const bank = entry("a", "asset", [value("2026-06-01", 21000)]);
+    const loan = entry("l", "liability", [value("2026-06-01", 16000)]);
+    expect(computeNetWorth([bank, loan], "2026-06-01")).toBe(5000);
   });
 });
 
-describe("shouldRecordSnapshot", () => {
-  it("always records when there is no latest snapshot", () => {
-    expect(shouldRecordSnapshot(null, 100, 50)).toBe(true);
-  });
-
-  it("records when net worth changes", () => {
-    expect(shouldRecordSnapshot({ net_worth: 50 }, 110, 50)).toBe(true);
-  });
-
-  it("skips when net worth is unchanged", () => {
-    expect(shouldRecordSnapshot({ net_worth: 60 }, 110, 50)).toBe(false);
-  });
-});
-
-describe("sortSnapshotsChronologically", () => {
-  it("sorts ascending by recorded_at with id tie-break", () => {
-    const snapshots = [
-      { id: "b", recorded_at: "2026-09-01T00:00:00Z", net_worth: 65 },
-      { id: "a", recorded_at: "2026-08-01T00:00:00Z", net_worth: 57 },
-      { id: "c", recorded_at: "2026-09-01T00:00:00Z", net_worth: 64 },
-    ];
-    expect(sortSnapshotsChronologically(snapshots).map((s) => s.id)).toEqual([
-      "a",
-      "b",
-      "c",
+describe("collectValueDates", () => {
+  it("returns sorted unique dates across all entries", () => {
+    const bank = entry("a", "asset", [
+      value("2026-06-01", 21000),
+      value("2026-05-01", 20000),
+    ]);
+    const loan = entry("l", "liability", [
+      value("2026-06-01", 16000),
+      value("2026-04-01", 15000),
+    ]);
+    expect(collectValueDates([bank, loan])).toEqual([
+      "2026-04-01",
+      "2026-05-01",
+      "2026-06-01",
     ]);
   });
 });
 
 describe("buildNetWorthSeries", () => {
-  it("maps snapshots to chart points sorted ascending", () => {
-    const snapshots = [
-      snapshot("2026-08-01T10:00:00Z", 200000, 150000, 50000),
-      snapshot("2026-07-01T10:00:00Z", 195000, 150000, 45000),
-    ];
-    expect(buildNetWorthSeries(snapshots)).toEqual([
-      { label: "Jul 2026", value: 45000, assets: 195000, liabilities: 150000 },
-      { label: "Aug 2026", value: 50000, assets: 200000, liabilities: 150000 },
+  it("reconstructs net worth at each unique date", () => {
+    const bank = entry("a", "asset", [
+      value("2026-05-01", 20000),
+      value("2026-06-01", 21000),
+    ]);
+    const loan = entry("l", "liability", [value("2026-06-01", 15000)]);
+    expect(buildNetWorthSeries([bank, loan])).toEqual([
+      { label: "May 2026", value: 20000, assets: 20000, liabilities: 0 },
+      {
+        label: "Jun 2026",
+        value: 6000,
+        assets: 21000,
+        liabilities: 15000,
+      },
     ]);
   });
 });
 
 describe("monthDelta", () => {
   const now = new Date("2026-08-07T12:00:00Z");
-  const snapshots = [
-    snapshot("2026-08-01T10:00:00Z", 0, 0, 60000),
-    snapshot("2026-07-15T10:00:00Z", 0, 0, 50000),
-  ];
 
-  it("returns null when there is no baseline before the month", () => {
-    const augustOnly = snapshots.filter((s) => s.recorded_at.startsWith("2026-08"));
-    expect(monthDelta(60000, augustOnly, now)).toBeNull();
+  it("returns null when no value date precedes the current month", () => {
+    const bank = entry("a", "asset", [value("2026-08-01", 60000)]);
+    expect(monthDelta([bank], now)).toBeNull();
   });
 
-  it("computes the change from the last snapshot before the current month", () => {
-    expect(monthDelta(60000, snapshots, now)).toEqual({ amount: 10000, percent: 20 });
+  it("computes the change from the last date before the current month", () => {
+    const bank = entry("a", "asset", [
+      value("2026-07-15", 50000),
+      value("2026-08-01", 60000),
+    ]);
+    expect(monthDelta([bank], now)).toEqual({ amount: 10000, percent: 20 });
   });
 
   it("returns null percent when the baseline is zero", () => {
-    const zeroBaseline = [snapshot("2026-06-01T10:00:00Z", 0, 0, 0)];
-    expect(monthDelta(500, zeroBaseline, now)).toEqual({ amount: 500, percent: null });
+    const bank = entry("a", "asset", [
+      value("2026-06-01", 0),
+      value("2026-08-01", 500),
+    ]);
+    expect(monthDelta([bank], now)).toEqual({ amount: 500, percent: null });
   });
 });
