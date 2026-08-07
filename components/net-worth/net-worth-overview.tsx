@@ -1,0 +1,102 @@
+"use client";
+
+import { useState } from "react";
+import { Plus, Scale } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useNetWorth, type EntryType } from "@/hooks/use-net-worth";
+import { NetWorthSummary } from "./net-worth-summary";
+import { NetWorthChart } from "./net-worth-chart";
+import { EntryList } from "./entry-list";
+import { EntryForm } from "./entry-form";
+import type { Tables } from "@/types/database";
+
+type NetWorthEntry = Tables<"net_worth_entries">;
+
+export function NetWorthOverview() {
+  const { assets, liabilities, isLoading } = useNetWorth();
+  const [formOpen, setFormOpen] = useState(false);
+  const [formType, setFormType] = useState<EntryType>("asset");
+  const [editing, setEditing] = useState<NetWorthEntry | null>(null);
+
+  const isEmpty = !isLoading && assets.length === 0 && liabilities.length === 0;
+
+  const openAdd = (type: EntryType) => {
+    setFormType(type);
+    setEditing(null);
+    setFormOpen(true);
+  };
+
+  const openEdit = (type: EntryType) => (entry: NetWorthEntry) => {
+    setFormType(type);
+    setEditing(entry);
+    setFormOpen(true);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-medium text-ink">
+            Net Worth
+          </h1>
+          <p className="mt-0.5 text-sm text-fog">
+            Track your assets and liabilities.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => openAdd("asset")}>
+            <Plus />
+            Add Asset
+          </Button>
+          <Button onClick={() => openAdd("liability")}>
+            <Plus />
+            Add Liability
+          </Button>
+        </div>
+      </div>
+
+      {isEmpty ? (
+        <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-xl border border-border/60 bg-white px-6 text-center shadow-sm">
+          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#18848c]/10">
+            <Scale className="h-6 w-6 text-[#18848c]" />
+          </span>
+          <div>
+            <p className="text-sm font-medium text-ink">
+              Build your net worth
+            </p>
+            <p className="mt-1 text-sm text-fog">
+              Add your assets and liabilities to get a complete picture of your
+              financial position.
+            </p>
+          </div>
+          <Button onClick={() => openAdd("asset")}>
+            <Plus />
+            Add your first asset
+          </Button>
+        </div>
+      ) : (
+        <>
+          <NetWorthSummary />
+          <NetWorthChart />
+          <EntryList
+            entryType="asset"
+            onAdd={() => openAdd("asset")}
+            onEdit={openEdit("asset")}
+          />
+          <EntryList
+            entryType="liability"
+            onAdd={() => openAdd("liability")}
+            onEdit={openEdit("liability")}
+          />
+        </>
+      )}
+
+      <EntryForm
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        entryType={formType}
+        entry={editing}
+      />
+    </div>
+  );
+}
