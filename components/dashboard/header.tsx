@@ -10,6 +10,7 @@ const navItems = [
   { href: "/dashboard", label: "Overview" },
   { href: "/dashboard/accounts", label: "Accounts" },
   { href: "/dashboard/portfolio", label: "Portfolio" },
+  { href: "/dashboard/net-worth", label: "Net Worth" },
 ];
 
 export function DashboardHeader() {
