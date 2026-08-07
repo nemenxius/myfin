@@ -939,15 +939,33 @@ export function useNetWorth() {
 
 - [ ] **Step 3: Update `components/net-worth/entry-list.tsx`**
 
-Two changes:
+Four changes:
 
-1. Add the import (after the `formatCurrency` import):
+1. Update the `useNetWorth` import to include `EntryWithValues`, and add the `entryCurrentValue` import (after the `formatCurrency` import):
 
 ```ts
+import { useNetWorth, type EntryType, type EntryWithValues } from "@/hooks/use-net-worth";
+import { formatCurrency } from "@/lib/format";
 import { entryCurrentValue } from "@/lib/net-worth/math";
 ```
 
-2. Replace the `total` memo:
+Also remove `import type { Tables } from "@/types/database";` and the local `type NetWorthEntry = Tables<"net_worth_entries">;` alias.
+
+2. Change the `EntryListProps` `onEdit` param and the `deleting` state to `EntryWithValues`:
+
+```ts
+interface EntryListProps {
+  entryType: EntryType;
+  onAdd: () => void;
+  onEdit: (entry: EntryWithValues) => void;
+}
+```
+
+```ts
+  const [deleting, setDeleting] = useState<EntryWithValues | null>(null);
+```
+
+3. Replace the `total` memo:
 
 ```ts
   const total = useMemo(
@@ -960,7 +978,7 @@ import { entryCurrentValue } from "@/lib/net-worth/math";
   );
 ```
 
-3. Replace the value cell:
+4. Replace the value cell:
 
 ```tsx
                   <TableCell className="text-right font-mono tabular-nums text-ink">
