@@ -38,7 +38,7 @@ components/
   categories/               # Category CRUD UI and Lucide icon renderer
   dashboard/                # Header, stat cards, month selector, chart, side panel
   landing/                  # Marketing page header/hero/hero-visual
-  net-worth/                # Net worth summary, evolution chart, entry lists/forms
+  net-worth/                # Net worth summary, evolution chart, entry lists/forms, category management
   portfolio/                # Holding form, holdings table, charts
   transactions/             # Transaction form and ledger table
   ui/                       # Base UI / Shadcn primitives
@@ -51,6 +51,7 @@ hooks/
   use-transactions.ts       # Transaction CRUD
   use-portfolio.ts          # Portfolio holdings/transactions CRUD + computed metrics
   use-net-worth.ts          # Net worth entries + value-row CRUD
+  use-net-worth-categories.ts   # Net worth asset category CRUD
 lib/
   supabase/client.ts        # Browser Supabase client
   supabase/server.ts        # Server Supabase client
@@ -148,6 +149,7 @@ Migration state to preserve:
 - `007_portfolio_and_holdings.sql`: portfolio_holdings + holding_transactions tables, RLS, indexes. Run remotely on 2026-08-06.
 - `008_net_worth.sql`: `net_worth_entries` (asset/liability via `entry_type`) + `net_worth_snapshots` tables, RLS, and a `SECURITY DEFINER` trigger (`record_net_worth_snapshot`) that records a snapshot whenever an entry write changes the user's net worth (dedupes when unchanged). Run remotely on 2026-08-06. **Dependency:** 008's `set_updated_at` trigger requires the `set_updated_at()` function from 007 — apply 007 before 008.
 - `009_net_worth_value_history.sql`: replaces 008's snapshot model — wipes existing 008 test data (TRUNCATE), drops the `net_worth_snapshots` table + `record_net_worth_snapshot()` trigger, drops `net_worth_entries.value`, and adds `net_worth_entry_values` (one dated value per entry/date) with RLS via the parent entry. Not yet run remotely; apply via Supabase dashboard SQL editor.
+- `010_net_worth_categories.sql`: `net_worth_categories` table (global `user_id IS NULL` read-only defaults + user custom), nullable `net_worth_entries.category_id` (ON DELETE SET NULL), tightened INSERT/UPDATE RLS on `net_worth_entries` so `category_id` must be global or owned. Not yet run remotely; apply via Supabase dashboard SQL editor after 009. Defaults (Money, P2P, Stock Exchange, PPR) seeded in `seed.sql`.
 
 After schema changes, regenerate types with:
 
@@ -174,6 +176,11 @@ supabase gen types typescript --project-id <PROJECT_ID> --schema public > types/
   per-symbol range (`3m`/`6m`/`1y`/`2y`/`5y`/`max`) derived from the earliest transaction.
 - Proxy migration is complete: `proxy.ts` replaced deprecated `middleware.ts`. Restart dev servers if the old deprecation warning persists.
 - Net Worth (`/dashboard/net-worth`) is fully independent of accounts, transactions, and portfolio data. Each entry (asset/liability) has a timeline of dated value rows (`net_worth_entry_values`); current value = the latest row, and the evolution chart is reconstructed from all value rows (no snapshots). Entries are restricted to the profile display currency (no FX conversion).
+- Net Worth assets support optional categories: four read-only global defaults
+  (Money, P2P, Stock Exchange, PPR) plus user-custom categories (managed in
+  Settings); assets show a category badge and pick one in the asset form.
+  Liabilities are unaffected. RLS validates that an entry's category is global
+  or owned by the user.
 
 ## 7. Known Follow-Ups
 
