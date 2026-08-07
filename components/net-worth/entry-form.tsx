@@ -8,6 +8,15 @@ import {
   type EntryType,
   type EntryWithValues,
 } from "@/hooks/use-net-worth";
+import { useNetWorthCategories } from "@/hooks/use-net-worth-categories";
+import { CategoryIcon } from "@/components/categories/category-icons";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,6 +72,8 @@ export function EntryForm({
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const { data: categories } = useNetWorthCategories();
   const [rows, setRows] = useState<ValueDraft[]>([]);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -78,6 +89,7 @@ export function EntryForm({
     if (entry) {
       setName(entry.name);
       setDescription(entry.description ?? "");
+      setCategoryId(entry.category_id ?? "");
       setRows(
         entry.values.map((v) => ({
           id: v.id,
@@ -88,9 +100,10 @@ export function EntryForm({
     } else {
       setName("");
       setDescription("");
+      setCategoryId("");
       setRows([{ as_of: todayInput(), value: "" }]);
     }
-  }, [open, entry]);
+  }, [open, entry, entry?.category_id]);
 
   const updateRow = (index: number, patch: Partial<ValueDraft>) => {
     setRows((old) => old.map((row, i) => (i === index ? { ...row, ...patch } : row)));
@@ -146,6 +159,7 @@ export function EntryForm({
           id: entry.id,
           name: name.trim(),
           description: description.trim() || null,
+          category_id: categoryId || null,
         });
 
         const keptIds = new Set(
@@ -179,6 +193,7 @@ export function EntryForm({
           entry_type: entryType,
           name: name.trim(),
           description: description.trim() || null,
+          category_id: categoryId || null,
           initialValue: Number(first.value),
           initialAsOf: first.as_of,
         });
@@ -215,6 +230,45 @@ export function EntryForm({
               <p className="text-xs text-destructive">{errors.name}</p>
             )}
           </div>
+
+          {entryType === "asset" && (
+            <div className="grid gap-1.5">
+              <Label htmlFor="category">Category</Label>
+              <Select
+                value={categoryId}
+                onValueChange={(value) => value !== null && setCategoryId(value)}
+                items={(categories ?? []).map((c) => ({
+                  value: c.id,
+                  label: c.name,
+                }))}
+              >
+                <SelectTrigger id="category" className="w-full">
+                  <SelectValue>
+                    {(value) => {
+                      const cat = categories?.find((c) => c.id === value);
+                      return cat ? (
+                        <>
+                          <CategoryIcon slug={cat.icon} className="h-4 w-4 text-fog" />
+                          {cat.name}
+                        </>
+                      ) : (
+                        "No category"
+                      );
+                    }}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No category</SelectItem>
+                  {(categories ?? []).map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      <CategoryIcon slug={category.icon} className="h-4 w-4 text-fog" />
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="grid gap-1.5">
             <Label htmlFor="description">Description (optional)</Label>
