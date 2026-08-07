@@ -27,6 +27,7 @@ app/
   onboarding/               # Display-currency onboarding
   dashboard/                # Overview, accounts, settings routes
   dashboard/portfolio/      # Portfolio overview + holding detail routes
+  dashboard/net-worth/      # Net worth overview route
   api/market-data           # Market data proxy route (quotes/history)
   layout.tsx                # Root layout and brand fonts
   providers.tsx             # TanStack Query + auth providers
@@ -37,6 +38,7 @@ components/
   categories/               # Category CRUD UI and Lucide icon renderer
   dashboard/                # Header, stat cards, month selector, chart, side panel
   landing/                  # Marketing page header/hero/hero-visual
+  net-worth/                # Net worth summary, evolution chart, entry lists/forms
   portfolio/                # Holding form, holdings table, charts
   transactions/             # Transaction form and ledger table
   ui/                       # Base UI / Shadcn primitives
@@ -48,6 +50,7 @@ hooks/
   use-categories.ts         # Category CRUD
   use-transactions.ts       # Transaction CRUD
   use-portfolio.ts          # Portfolio holdings/transactions CRUD + computed metrics
+  use-net-worth.ts          # Net worth entries CRUD + snapshot queries
 lib/
   supabase/client.ts        # Browser Supabase client
   supabase/server.ts        # Server Supabase client
@@ -57,6 +60,7 @@ lib/
   ledger.ts                 # Pure ledger/running-balance helper
   pending-display-currency.ts # localStorage helpers for signup currency
   market-data/              # Yahoo/AlphaVantage/CoinGecko providers + TTL cache
+  net-worth/                # Pure net worth totals/series helpers + tests
   portfolio/                # Pure portfolio math helpers + tests
 supabase/
   migrations/               # Numbered SQL migrations
@@ -141,6 +145,7 @@ Migration state to preserve:
 - `005_add_to_account_id.sql`: `transactions.to_account_id` + transfer RLS policies.
 - `006_profile_defaults.sql`: nullable `profiles.default_account_id` / `default_category_id` for prefilling new transactions. Not yet run remotely; apply via Supabase dashboard SQL editor.
 - `007_portfolio_and_holdings.sql`: portfolio_holdings + holding_transactions tables, RLS, indexes. Not yet run remotely; apply via Supabase dashboard SQL editor.
+- `008_net_worth.sql`: `net_worth_entries` (asset/liability via `entry_type`) + `net_worth_snapshots` tables, RLS, and a `SECURITY DEFINER` trigger (`record_net_worth_snapshot`) that records a snapshot whenever an entry write changes the user's net worth (dedupes when unchanged). Not yet run remotely; apply via Supabase dashboard SQL editor.
 
 After schema changes, regenerate types with:
 
@@ -166,6 +171,7 @@ supabase gen types typescript --project-id <PROJECT_ID> --schema public > types/
   charts start at that holding's first transaction, and price history is fetched at a
   per-symbol range (`3m`/`6m`/`1y`/`2y`/`5y`/`max`) derived from the earliest transaction.
 - Proxy migration is complete: `proxy.ts` replaced deprecated `middleware.ts`. Restart dev servers if the old deprecation warning persists.
+- Net Worth (`/dashboard/net-worth`) is fully independent of accounts, transactions, and portfolio data. Users maintain assets and liabilities (single `net_worth_entries` table discriminated by `entry_type`); snapshots are recorded automatically by a DB trigger with net-worth dedupe. Entries are restricted to the profile display currency (no FX conversion); the evolution chart, summary, and month-over-month delta all use the display currency.
 
 ## 7. Known Follow-Ups
 
@@ -180,6 +186,7 @@ supabase gen types typescript --project-id <PROJECT_ID> --schema public > types/
 - Portfolio: the portfolio chart multiplies each holding's current total shares across its entire history range (spec-mandated model; do not "fix" without updating the spec).
 - Portfolio: holdings created before currency auto-detection may have the wrong stored `currency` (USD default); no backfill was built. Consider a per-holding currency edit action.
 - Market data: Yahoo rate limits; in-memory cache is per server instance. If multi-instance, consider a shared cache.
+- Net worth: if the user changes their display currency, existing entry values are re-labeled (not converted), matching the app-wide no-FX behavior. Snapshot history reflects values as of each recorded write.
 
 ## 8. Token-Saving / Ignore Guidance
 
