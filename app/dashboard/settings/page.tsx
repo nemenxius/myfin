@@ -16,6 +16,7 @@ import { supabaseClient } from "@/lib/supabase/client";
 import { CURRENCIES } from "@/components/accounts/account-currencies";
 import { CategoryList } from "@/components/categories/category-list";
 import { AccountList } from "@/components/accounts/account-list";
+import { NetWorthCategoryList } from "@/components/net-worth/net-worth-category-list";
 
 const currencyOptions = CURRENCIES.map((c) => ({
   value: c.value,
@@ -318,6 +319,20 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent>
           <CategoryList />
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/50 bg-card shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-base font-medium">
+            Net Worth categories
+          </CardTitle>
+          <CardDescription>
+            Categorize your assets. Global defaults are read-only.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <NetWorthCategoryList />
         </CardContent>
       </Card>
 
