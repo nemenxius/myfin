@@ -141,6 +141,8 @@ export function EntryList({ entryType, onAdd, onEdit }: EntryListProps) {
             </Button>
           </div>
         ) : (
+          <>
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -212,6 +214,66 @@ export function EntryList({ entryType, onAdd, onEdit }: EntryListProps) {
               ))}
             </TableBody>
           </Table>
+          </div>
+
+          <ul className="space-y-2 md:hidden">
+            {entries.map((entry) => (
+              <li
+                key={entry.id}
+                className="rounded-xl border border-border/60 bg-card p-3 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-foreground">
+                      {entry.name}
+                    </p>
+                    {entry.description && (
+                      <p className="truncate text-xs text-fog">
+                        {entry.description}
+                      </p>
+                    )}
+                    {entryType === "asset" && entry.category_id && (
+                      <span className="mt-1.5 inline-flex items-center gap-1 rounded-md border border-border bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
+                        <CategoryIcon
+                          slug={categoryMap.get(entry.category_id)?.icon ?? "Tag"}
+                          className="h-3.5 w-3.5"
+                        />
+                        {categoryMap.get(entry.category_id)?.name ??
+                          "Uncategorized"}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-0.5">
+                    <span className="font-mono text-sm font-semibold tabular-nums text-foreground">
+                      {formatCurrency(entryCurrentValue(entry) ?? 0, currency)}
+                    </span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={<Button variant="ghost" size="icon-sm" />}
+                        aria-label={`${title} actions`}
+                      >
+                        <MoreHorizontal />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => onEdit(entry)}>
+                          <Pencil />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => setDeleting(entry)}
+                        >
+                          <Trash2 />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+          </>
         )}
       </CardContent>
 

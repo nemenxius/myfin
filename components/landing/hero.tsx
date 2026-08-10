@@ -6,18 +6,18 @@ export function Hero() {
   return (
     <section
       id="about"
-      className="relative z-10 mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-14 px-6 pb-24 pt-10 lg:grid-cols-2 lg:pt-16"
+      className="relative z-10 mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-12 px-4 pb-20 pt-8 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:pb-28 lg:pt-16"
     >
-      <div>
+      <div className="max-w-md">
         <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-          MyFin: Your Finances,{" "}
+          Your Finances,{" "}
           <span className="text-primary">Simplified.</span>
         </h1>
-        <p className="mt-5 max-w-md text-lg leading-relaxed text-muted-foreground">
-          An account-based expense tracker with powerful visual insights. Track
-          income and spending across accounts, all in one place.
+        <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
+          Track income and spending across accounts, investments, and net worth
+          — with clear charts and a running-balance ledger, all in one place.
         </p>
-        <div className="mt-8 flex flex-wrap gap-3">
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <Button
             render={<Link href="/auth?mode=signup" />}
             nativeButton={false}

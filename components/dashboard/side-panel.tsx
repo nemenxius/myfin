@@ -73,7 +73,7 @@ export function SidePanel({ month }: { month: string }) {
           ) : byCategory.length === 0 ? (
             <p className="text-sm text-fog">No spending this month.</p>
           ) : (
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col items-center gap-4 sm:flex-row">
               <div className="h-28 w-28 shrink-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>

@@ -3,7 +3,7 @@ import { Hero } from "@/components/landing/hero";
 
 export default function Home() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
+    <main className="relative min-h-screen overflow-hidden bg-background">
       {/* Subtle geometric mesh background */}
       <div
         aria-hidden
@@ -20,6 +20,6 @@ export default function Home() {
       />
       <Header />
       <Hero />
-    </div>
+    </main>
   );
 }

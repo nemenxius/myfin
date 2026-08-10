@@ -107,6 +107,8 @@ export function HoldingTransactionsTable({
             </Button>
           </div>
         ) : (
+          <>
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -204,6 +206,79 @@ export function HoldingTransactionsTable({
               })}
             </TableBody>
           </Table>
+          </div>
+
+          <ul className="space-y-2 md:hidden">
+            {holding.transactions.map((transaction) => {
+              const total = transaction.shares * transaction.price_per_share;
+              const isSell = transaction.type === "sell";
+              return (
+                <li
+                  key={transaction.id}
+                  className="rounded-xl border border-border/60 bg-card p-3 shadow-sm"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <span className="inline-flex items-center rounded-md border border-border bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
+                        {HOLDING_TRANSACTION_TYPE_LABELS[transaction.type] ??
+                          transaction.type}
+                      </span>
+                      <p className="mt-1.5 truncate text-xs text-fog">
+                        {new Date(
+                          transaction.transacted_at
+                        ).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="text-right">
+                        <p
+                          className={`font-mono text-sm font-semibold tabular-nums ${
+                            isSell ? "text-ember" : "text-foreground"
+                          }`}
+                        >
+                          {isSell ? "-" : "+"}
+                          {transaction.shares.toFixed(
+                            transaction.shares % 1 === 0 ? 0 : 4
+                          )}
+                        </p>
+                        <p className="font-mono text-xs tabular-nums text-fog">
+                          {formatCurrency(total, holding.currency)}
+                        </p>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          render={<Button variant="ghost" size="icon-sm" />}
+                          aria-label="Transaction actions"
+                        >
+                          <MoreHorizontal />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => openEdit(transaction)}
+                          >
+                            <Pencil />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => setDeleting(transaction)}
+                          >
+                            <Trash2 />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          </>
         )}
       </CardContent>
 

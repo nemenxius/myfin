@@ -31,7 +31,7 @@ export function NetWorthOverview() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-medium text-foreground">
             Net Worth
@@ -40,12 +40,19 @@ export function NetWorthOverview() {
             Track your assets and liabilities.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => openAdd("asset")}>
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          <Button
+            variant="outline"
+            className="flex-1 sm:flex-none"
+            onClick={() => openAdd("asset")}
+          >
             <Plus />
             Add Asset
           </Button>
-          <Button onClick={() => openAdd("liability")}>
+          <Button
+            className="flex-1 sm:flex-none"
+            onClick={() => openAdd("liability")}
+          >
             <Plus />
             Add Liability
           </Button>

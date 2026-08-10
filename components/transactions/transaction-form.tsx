@@ -178,7 +178,7 @@ export function TransactionForm({
           </div>
         ) : (
         <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label htmlFor="type">Type</Label>
               <Select value={type} onValueChange={(value) => setType(value as TransactionType)}>
@@ -213,7 +213,7 @@ export function TransactionForm({
           </div>
 
 {type === "Transfer" ? (
-           <div className="grid grid-cols-2 gap-4">
+           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
              <div className="grid gap-1.5">
                <Label htmlFor="account-from">From</Label>
                <Select
@@ -332,7 +332,7 @@ export function TransactionForm({
            </div>
          )}
 
-<div className="grid grid-cols-2 gap-4">
+<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="grid gap-1.5">
                 <Label htmlFor="date">Date</Label>
                 <Input

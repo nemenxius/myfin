@@ -138,6 +138,8 @@ export function AccountList() {
             </Button>
           </div>
         ) : (
+          <>
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -203,6 +205,60 @@ export function AccountList() {
               ))}
             </TableBody>
           </Table>
+          </div>
+
+          <ul className="space-y-2 md:hidden">
+            {rows.map((account) => (
+              <li
+                key={account.id}
+                className="rounded-xl border border-border/60 bg-card p-3 shadow-sm"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-foreground">
+                      {account.name}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs text-fog">
+                      {ACCOUNT_TYPE_LABELS[account.account_type] ??
+                        account.account_type}
+                      {account.currency ? ` · ${account.currency}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-0.5">
+                    <span
+                      className={`font-mono text-sm font-semibold tabular-nums ${
+                        account.balance >= 0 ? "text-foreground" : "text-ember"
+                      }`}
+                    >
+                      {formatCurrency(account.balance, account.currency)}
+                    </span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={<Button variant="ghost" size="icon-sm" />}
+                        aria-label="Account actions"
+                      >
+                        <MoreHorizontal />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openEdit(account)}>
+                          <Pencil />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => setDeleting(account)}
+                        >
+                          <Trash2 />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+          </>
         )}
       </CardContent>
 

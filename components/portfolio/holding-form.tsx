@@ -302,7 +302,7 @@ export function HoldingForm({
 
         <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
           {isCreating && (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="grid gap-1.5">
                 <Label htmlFor="symbol">Symbol</Label>
                 <Autocomplete.Root
@@ -377,7 +377,7 @@ export function HoldingForm({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label htmlFor="type">Transaction type</Label>
               <Select
@@ -429,7 +429,7 @@ export function HoldingForm({
             )}
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="grid gap-1.5">
               <Label htmlFor="shares">Shares</Label>
               <Input
@@ -479,7 +479,7 @@ export function HoldingForm({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label htmlFor="date">Date</Label>
               <Input

@@ -13,7 +13,7 @@ export function PortfolioOverview() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-medium text-foreground">
             Portfolio
@@ -22,7 +22,7 @@ export function PortfolioOverview() {
             Track your investments.
           </p>
         </div>
-        <Button onClick={() => setFormOpen(true)}>
+        <Button className="w-full sm:w-auto" onClick={() => setFormOpen(true)}>
           <Plus />
           Add Holding
         </Button>

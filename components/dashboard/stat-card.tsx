@@ -35,7 +35,7 @@ export function StatCard({
           <Icon className="h-3.5 w-3.5 text-[#18848c]" />
         </span>
       </div>
-      <p className="font-mono text-2xl font-medium tracking-tight text-foreground tabular-nums">
+      <p className="font-mono text-xl font-medium tracking-tight text-foreground tabular-nums sm:text-2xl">
         {value}
       </p>
       {delta ? (

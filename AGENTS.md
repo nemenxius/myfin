@@ -29,17 +29,19 @@ app/
   dashboard/portfolio/      # Portfolio overview + holding detail routes
   dashboard/net-worth/      # Net worth overview route
   api/market-data           # Market data proxy route (quotes/history)
-  layout.tsx                # Root layout and brand fonts
+  manifest.ts               # PWA web app manifest
+  layout.tsx                # Root layout, brand fonts, PWA metadata + viewport
   providers.tsx             # TanStack Query + auth providers
 components/
   accounts/                 # Account CRUD, currencies, account type constants
   auth/                     # Auth forms, user menu, onboarding gate
   brand/                    # Logo
   categories/               # Category CRUD UI and Lucide icon renderer
-  dashboard/                # Header, stat cards, month selector, chart, side panel
-  landing/                  # Marketing page header/hero/hero-visual
+  dashboard/                # Header, mobile-nav, stat cards, month selector, chart, side panel
+  landing/                  # Marketing page header/hero/hero-visual (app-preview mock)
   net-worth/                # Net worth summary, evolution chart, entry lists/forms, category management
   portfolio/                # Holding form, holdings table, charts
+  pwa/                      # Service worker registration
   transactions/             # Transaction form and ledger table
   ui/                       # Base UI / Shadcn primitives
 hooks/
@@ -109,6 +111,11 @@ proxy.ts                    # Next 16.3 Proxy auth/session refresh; replaces mid
 - Prefer primitives in `components/ui/` over custom base markup.
 - Base UI quirks: `Button` uses `render` rather than `asChild`; Select `onValueChange` passes `string | null`; `SelectValue` supports a function child for custom selected rendering.
 - Category icons use `components/categories/category-icons.tsx` (`CategoryIcon` with `Tag` fallback). Dashboard side-panel icons are tinted to donut colors; transaction-form dropdown icons use `text-fog`.
+- The app is fully responsive down to mobile and installable as a PWA (`app/manifest.ts`, `public/sw.js`, icons in `public/icons/`). The root layout exports `viewport` (`viewportFit: "cover"`, `themeColor`) and registers the service worker via `components/pwa/service-worker-registration.tsx`.
+- On small screens (below `md`) authenticated pages get a fixed bottom tab bar (`components/dashboard/mobile-nav.tsx`, hidden `md:hidden`) instead of the desktop header nav. Keep the mobile nav in sync when adding dashboard routes.
+- Tables render as stacked cards below `md` and as `<Table>` from `md` up. The pattern: wrap the `<Table>` in `<div className="hidden md:block">` and add a sibling `<ul className="space-y-2 md:hidden">` of cards, inside a fragment (a ternary branch can't hold two sibling elements). See `transaction-list.tsx` as the reference.
+- Dialog forms stack their field grids below `sm` (`grid-cols-1 sm:grid-cols-2/3`).
+- Safe-area utilities `pb-safe` / `pt-safe` (Tailwind v4 `@utility` in `app/globals.css`) use `env(safe-area-inset-*)` for iOS; the bottom nav uses `pb-safe` and dashboard content reserves `pb-28 md:pb-10` so the nav never covers content.
 
 ## 4. Commands And Verification
 
@@ -181,6 +188,16 @@ supabase gen types typescript --project-id <PROJECT_ID> --schema public > types/
   Settings); assets show a category badge and pick one in the asset form.
   Liabilities are unaffected. RLS validates that an entry's category is global
   or owned by the user.
+- The app is installable as a PWA and fully usable on phones: `app/manifest.ts`,
+  `public/sw.js` (precache + stale-while-revalidate static assets, network-first
+  navigations with cached landing fallback), `public/icons/` (192/512 + apple-touch),
+  `viewportFit: "cover"` + `themeColor` in the root layout. Below `md` a fixed bottom
+  tab bar replaces the header nav, and all list tables (transactions, holdings,
+  net-worth entries, accounts, holding transactions) render as stacked cards.
+- Landing page hero visual (`components/landing/hero-visual.tsx`) is a faithful,
+  responsive preview of the real dashboard (stat cards, monthly spending chart,
+  running-balance ledger, floating "By category" donut chip) using brand tokens —
+  not a generic mock. Keep it in sync if dashboard components change shape.
 
 ## 7. Known Follow-Ups
 

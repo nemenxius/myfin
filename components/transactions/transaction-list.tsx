@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { MoreHorizontal, Pencil, Plus, Trash2, ArrowLeftRight } from "lucide-react";
+import { MoreHorizontal, Pencil, Plus, Trash2, ArrowLeftRight, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -151,6 +151,8 @@ export function TransactionList({ month }: { month: string }) {
             </Button>
           </div>
         ) : (
+          <>
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -248,6 +250,93 @@ export function TransactionList({ month }: { month: string }) {
               ))}
             </TableBody>
           </Table>
+          </div>
+
+          <ul className="space-y-2 md:hidden">
+            {rows.map((transaction) => (
+              <li
+                key={transaction.id}
+                className="rounded-xl border border-border/60 bg-card p-3 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
+                      {transaction.transaction_type === "Transfer" &&
+                      transaction.to_account_id ? (
+                        <ArrowLeftRight className="h-4 w-4" />
+                      ) : (
+                        <CategoryIcon
+                          slug={
+                            categoryMap.get(transaction.category_id ?? "")?.icon ??
+                            "Tag"
+                          }
+                          className="h-4 w-4"
+                        />
+                      )}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {transaction.transaction_type === "Transfer" &&
+                        transaction.to_account_id
+                          ? `Transfer to ${
+                              accountMap.get(transaction.to_account_id) ??
+                              transaction.to_account_id
+                            }`
+                          : (categoryMap.get(transaction.category_id ?? "")?.name ??
+                            "Untitled")}
+                      </p>
+                      {transaction.description && (
+                        <p className="truncate text-xs text-fog">
+                          {transaction.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-0.5">
+                    <span
+                      className={`font-mono text-sm font-semibold tabular-nums ${
+                        transaction.amount >= 0 ? "text-leaf" : "text-ember"
+                      }`}
+                    >
+                      {transaction.amount >= 0 ? "+" : "−"}
+                      {formatCurrency(Math.abs(transaction.amount), currency)}
+                    </span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={<Button variant="ghost" size="icon-sm" />}
+                        aria-label="Transaction actions"
+                      >
+                        <MoreHorizontal />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openEdit(transaction)}>
+                          <Pencil />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => setDeleting(transaction)}
+                        >
+                          <Trash2 />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-2 border-t border-border/50 pt-2 text-xs text-fog">
+                  <span className="truncate">
+                    {format(new Date(transaction.date), "MMM d, yyyy")} ·{" "}
+                    {accountMap.get(transaction.account_id) ?? "Account"}
+                  </span>
+                  <span className="shrink-0 font-mono tabular-nums text-muted-foreground">
+                    Bal {formatCurrency(transaction.balance, currency)}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+          </>
         )}
       </CardContent>
 

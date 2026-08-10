@@ -20,7 +20,7 @@ export function DashboardHeader() {
   return (
     <>
       <header className="sticky top-0 z-30 border-b border-border/50 bg-background/70 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
           <div className="flex items-center gap-6">
             <Link href="/dashboard" className="flex items-center gap-2.5 text-primary">
               <Logo className="h-7 w-7" />
@@ -28,7 +28,7 @@ export function DashboardHeader() {
                 MyFin
               </span>
             </Link>
-            <nav className="hidden items-center gap-1 sm:flex">
+            <nav className="hidden items-center gap-1 md:flex">
               {navItems.map((item) => {
                 const active =
                   item.href === "/dashboard"

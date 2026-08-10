@@ -124,6 +124,8 @@ export function HoldingsTable({ onAddHolding }: { onAddHolding: () => void }) {
             </Button>
           </div>
         ) : (
+          <>
+          <div className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -264,6 +266,107 @@ export function HoldingsTable({ onAddHolding }: { onAddHolding: () => void }) {
               })}
             </TableBody>
           </Table>
+          </div>
+
+          <ul className="space-y-2 md:hidden">
+            {holdings.map((holding) => {
+              const hasQuote = holding.quote !== null;
+              return (
+                <li
+                  key={holding.id}
+                  className="cursor-pointer rounded-xl border border-border/60 bg-card p-3 shadow-sm transition-colors active:bg-muted/50"
+                  onClick={() =>
+                    router.push(`/dashboard/portfolio/${holding.id}`)
+                  }
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {holding.symbol}
+                      </p>
+                      {holding.name && (
+                        <p className="truncate text-xs text-fog">
+                          {holding.name}
+                        </p>
+                      )}
+                    </div>
+                    <div
+                      className="flex items-center gap-0.5"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <span className="font-mono text-sm font-semibold tabular-nums text-foreground">
+                        {formatCurrency(holding.currentValue, holding.currency)}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => openQuickAdd(holding)}
+                        aria-label={`Add transaction for ${holding.symbol}`}
+                      >
+                        <Plus />
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          render={<Button variant="ghost" size="icon-sm" />}
+                          aria-label="Holding actions"
+                        >
+                          <MoreHorizontal />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() =>
+                              router.push(`/dashboard/portfolio/${holding.id}`)
+                            }
+                          >
+                            View details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => setDeleting(holding)}
+                          >
+                            <Trash2 />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-2 border-t border-border/50 pt-2 text-xs text-fog">
+                    <span className="truncate">
+                      {holding.totalShares.toFixed(
+                        holding.totalShares % 1 === 0 ? 0 : 4
+                      )}{" "}
+                      shares ·{" "}
+                      {ASSET_TYPE_LABELS[holding.asset_type] ??
+                        holding.asset_type}
+                    </span>
+                    <span className="flex shrink-0 items-center gap-2">
+                      <span
+                        className={cn(
+                          "font-mono tabular-nums",
+                          changeClass(holding.totalChange)
+                        )}
+                      >
+                        {signedPercent(holding.totalChangePercent)}
+                      </span>
+                      {hasQuote && (
+                        <span
+                          className={cn(
+                            "font-mono tabular-nums",
+                            changeClass(holding.dailyChange)
+                          )}
+                        >
+                          {holding.dailyChange >= 0 ? "+" : ""}
+                          {formatCurrency(holding.dailyChange, holding.currency)}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          </>
         )}
       </CardContent>
 

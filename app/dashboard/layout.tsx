@@ -1,4 +1,5 @@
 import { DashboardHeader } from "@/components/dashboard/header";
+import { MobileNav } from "@/components/dashboard/mobile-nav";
 import { OnboardingGate } from "@/components/auth/onboarding-gate";
 
 export default function DashboardLayout({
@@ -10,7 +11,10 @@ export default function DashboardLayout({
     <main className="min-h-screen bg-background">
       <OnboardingGate>
         <DashboardHeader />
-        <div className="mx-auto max-w-6xl px-6 py-8">{children}</div>
+        <div className="mx-auto max-w-6xl px-4 pb-28 pt-6 sm:px-6 md:pb-10 md:pt-8">
+          {children}
+        </div>
+        <MobileNav />
       </OnboardingGate>
     </main>
   );
