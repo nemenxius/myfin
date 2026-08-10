@@ -26,12 +26,19 @@ export function RefreshButton() {
 
   // Disabled while any of the targeted queries are fetching (initial load or
   // background refetch) to prevent double-click refetch storms.
+  //
+  // Must be a SINGLE unconditional useIsFetching() call: chaining multiple
+  // useIsFetching() calls with `||` would short-circuit, so the hook count
+  // would vary between renders (React Rules of Hooks violation). The predicate
+  // matches element-wise against REFRESH_QUERY_KEYS, which is the single
+  // source of truth for the five targeted keys.
   const isFetching =
-    useIsFetching({ queryKey: ["transactions"] }) > 0 ||
-    useIsFetching({ queryKey: ["accounts"] }) > 0 ||
-    useIsFetching({ queryKey: ["categories"] }) > 0 ||
-    useIsFetching({ queryKey: ["portfolio", "data"] }) > 0 ||
-    useIsFetching({ queryKey: ["net-worth"] }) > 0;
+    useIsFetching({
+      predicate: (query) =>
+        REFRESH_QUERY_KEYS.some((key) =>
+          key.every((part, index) => query.queryKey[index] === part),
+        ),
+    }) > 0;
 
   const handleRefresh = () => {
     for (const queryKey of REFRESH_QUERY_KEYS) {
