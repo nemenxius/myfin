@@ -401,7 +401,11 @@ Replace the `signOut` callback (current lines 53-55) so anonymous users purge th
   const signOut = useCallback(async () => {
     if (user?.is_anonymous) {
       // Demo sandbox: purge permanently; never surface cleanup errors.
-      await supabaseClient.rpc("purge_demo_user").catch(() => undefined);
+      try {
+        await supabaseClient.rpc("purge_demo_user");
+      } catch {
+        // Cleanup errors must never block sign-out.
+      }
     }
     await supabaseClient.auth.signOut();
   }, [user]);
@@ -494,7 +498,11 @@ export function TryDemoButton({
     if (seedError) {
       // Best-effort cleanup: don't strand an empty sandbox. Errors here are
       // swallowed; the visitor sees the ORIGINAL seed error.
-      await supabaseClient.rpc("purge_demo_user").catch(() => undefined);
+      try {
+        await supabaseClient.rpc("purge_demo_user");
+      } catch {
+        // ignore cleanup errors
+      }
       await supabaseClient.auth.signOut().catch(() => undefined);
       setLoading(false);
       setError(seedError.message);
@@ -627,10 +635,12 @@ export function DemoBanner() {
 
     void supabaseClient
       .rpc("seed_demo_data")
-      .then(() => {
-        if (active) void queryClient.invalidateQueries();
-      })
-      .catch(() => undefined);
+      .then(
+        () => {
+          if (active) void queryClient.invalidateQueries();
+        },
+        () => undefined
+      );
 
     return () => {
       active = false;
