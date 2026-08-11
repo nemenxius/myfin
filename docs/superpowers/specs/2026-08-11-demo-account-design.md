@@ -331,6 +331,104 @@ snapshots model was removed in 009 and is not reintroduced.
    (as with previous migrations).
 4. No type regeneration needed (no table changes).
 
+## Manual QA Checklist (post-setup)
+
+Run in a fresh incognito window against the live project after the setup
+above. The migration is applied remotely as `postgres`; the SQL editor
+cannot run under the anonymous session, so use the app flows and the
+queries below.
+
+### 0. Pre-check
+
+- [ ] Anonymous sign-ins ENABLED; `pg_cron` ENABLED; migration 011 applied.
+- [ ] Functions + cron job exist:
+  ```sql
+  SELECT proname FROM pg_proc
+  WHERE proname IN ('seed_demo_data','purge_demo_user','purge_stale_demo_users');
+  -- expect 3 rows
+  SELECT jobname, schedule, command FROM cron.job;
+  -- expect: purge-stale-demo-users / 0 * * * * / SELECT public.purge_stale_demo_users()
+  ```
+- [ ] Migration 006 status: if `profiles.default_account_id` /
+      `default_category_id` exist, expect the new-transaction prefill below;
+      otherwise no prefill (expected).
+
+### 1. Full seed landing
+
+- [ ] Fresh incognito → landing → **Try demo** → `/dashboard` (no onboarding).
+- [ ] Accounts: exactly 3 — Main Checking (EUR), Savings (≈9,000), Cash (150).
+- [ ] Ledger: 6 months of history; salaries +2600 on the 25th, rent −950 on
+      the 1st; 2 transfers "to Savings" (running balance unchanged).
+- [ ] Portfolio: EUNL.DE (25 sh), VWCE.DE (14 sh), BTC (0.07); performance +
+      holding charts render.
+- [ ] Net worth: 5 entries; 6-point evolution chart; current values ≈
+      10,500 / 16,200 / 4,400 / 400 / 17,600; net ≈ +13k; asset rows show
+      category badges Money / Stock Exchange / PPR.
+- [ ] Categories: global categories visible; transaction form prefills
+      Main Checking / Food **only if migration 006 is applied**.
+
+### 2. Ledger coherence & edits
+
+- [ ] Main Checking running balance never negative; ends ≈ 10,111.45.
+- [ ] Add a transaction, delete a holding, add a net-worth value — banner
+      stays visible, edits apply.
+
+### 3. Exit demo / purge-on-signout
+
+- [ ] **Exit demo** → landing; purge verified:
+  ```sql
+  SELECT count(*) FROM auth.users
+  WHERE raw_app_meta_data ->> 'is_anonymous' = 'true';
+  -- expect 0 after a fresh sign-out
+  ```
+- [ ] (Alternative) Re-enter the demo → assert a **fresh** sandbox.
+- [ ] **Log out** from the user menu behaves identically to Exit demo.
+
+### 4. Idempotency (double-seed)
+
+- [ ] Hard-reload `/dashboard` → data still present exactly once (banner
+      re-seed is a no-op; `SELECT count(*) FROM public.accounts` = 3,
+      transactions = 31).
+
+### 5. Real-user guard
+
+- [ ] Real account → `/` → no demo CTAs (hero/header/auth).
+- [ ] Directly attempt the demo handler (e.g. devtools
+      `supabase.auth.signInAnonymously()`) → session must NOT be swapped.
+- [ ] As a real user, `SELECT public.seed_demo_data();` must **raise**
+      (`seed_demo_data is only available to anonymous demo sessions`);
+      same for `purge_demo_user()`.
+
+### 6. Market-data outage
+
+- [ ] Block outbound calls to market-data providers → portfolio + holding
+      charts degrade gracefully (no crash).
+
+### 7. Sweep selectivity
+
+- [ ] Active demo session open → `SELECT public.purge_stale_demo_users();`
+      → active user untouched.
+- [ ] Age a second demo user's session:
+  ```sql
+  UPDATE auth.sessions SET updated_at = now() - interval '25 hours'
+  WHERE user_id = '<second-demo-uid>';
+  SELECT public.purge_stale_demo_users();
+  ```
+  → only the aged user is deleted; non-anonymous users untouched.
+- [ ] (Optional, long-running) Leave a demo session idle >24h and confirm
+      the hourly cron job removes it.
+
+### Environment facts
+
+- `.env.local`: valid-shaped `NEXT_PUBLIC_SUPABASE_URL` +
+  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (publishable key, never
+  service-role). Invalid URLs break `/auth` with `Invalid supabaseUrl`.
+- After enabling anonymous sign-ins, restart the dev server if the proxy
+  behaves unexpectedly.
+- Regenerate `types/database.ts` after 011 is live
+  (`supabase gen types typescript --project-id <ID> --schema public > types/database.ts`)
+  to close the untyped-RPC follow-up.
+
 ## AGENTS.md Updates (durable only)
 
 - Migration state: `011_demo_account.sql` — hardened `SECURITY DEFINER`

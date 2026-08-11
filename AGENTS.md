@@ -225,6 +225,8 @@ supabase gen types typescript --project-id <PROJECT_ID> --schema public > types/
 - Settings roadmap: dark mode/theme, CSV export, display name, week/month-start preferences, MFA/session management, delete account.
 - Optional tooling cleanup: replace broken `npm run lint` script or add an ESLint config.
 - Optional Vitest cleanup: remove the non-failing native config warning by moving config to `.mjs` or setting package/module configuration intentionally.
+- Optional Vitest cleanup: when a `.worktrees/` worktree exists, `npm test` from the main repo root double-runs the suite (vitest globs into the worktree; observed 5 files/50 tests → 10 files/100 tests). Consider excluding `.worktrees/**` in `vitest.config.ts`.
+- Sign-out failure feedback: `user-menu.tsx` and `settings/page.tsx` still redirect after `signOut()` without checking its result (pre-existing; the demo banner was fixed in the demo-account feature). Consider the same inline-error guard there.
 - Portfolio: holdings are deleted when a user deletes the holding (cascades transactions); consider warning before deletion (UI already confirms).
 - Portfolio: the portfolio chart multiplies each holding's current total shares across its entire history range (spec-mandated model; do not "fix" without updating the spec).
 - Portfolio: holdings created before currency auto-detection may have the wrong stored `currency` (USD default); no backfill was built. Consider a per-holding currency edit action.
