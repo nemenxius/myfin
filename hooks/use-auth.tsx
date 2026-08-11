@@ -51,8 +51,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    if (user?.is_anonymous) {
+      // Demo sandbox: purge permanently; never surface cleanup errors.
+      try {
+        await supabaseClient.rpc("purge_demo_user");
+      } catch {
+        // Cleanup errors must never block sign-out.
+      }
+    }
     await supabaseClient.auth.signOut();
-  }, []);
+  }, [user]);
 
   return (
     <AuthContext.Provider value={{ user, isLoading, signOut }}>

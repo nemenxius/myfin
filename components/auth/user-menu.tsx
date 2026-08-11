@@ -36,7 +36,9 @@ export function UserMenu() {
       <DropdownMenuContent align="end">
         <DropdownMenuGroup>
           <DropdownMenuLabel className="max-w-48 truncate">
-            {user?.email ?? "Account"}
+            {user?.is_anonymous
+              ? "Demo account"
+              : user?.email ?? "Account"}
           </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
