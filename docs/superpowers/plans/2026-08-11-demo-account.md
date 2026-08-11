@@ -475,15 +475,18 @@ export function TryDemoButton({
   className?: string;
 }) {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleClick = async () => {
+    if (loading) return;
     setError(null);
 
     // Defensive guard: never start an anonymous session over a real one.
-    if (user) return;
+    // `isLoading` closes the window where a real session exists but `user`
+    // has not resolved yet (review fix, commit 2e697c6).
+    if (user || isLoading) return;
 
     setLoading(true);
 
@@ -514,7 +517,7 @@ export function TryDemoButton({
     router.refresh();
   };
 
-  if (user) return null;
+  if (user || isLoading) return null;
 
   return (
     <div className="flex flex-col gap-1">
