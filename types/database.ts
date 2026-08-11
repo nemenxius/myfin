@@ -78,6 +78,60 @@ export type Database = {
           },
         ]
       }
+      holding_transactions: {
+        Row: {
+          commission: number
+          created_at: string
+          holding_id: string
+          id: string
+          notes: string | null
+          price_per_share: number
+          shares: number
+          transacted_at: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          commission?: number
+          created_at?: string
+          holding_id: string
+          id?: string
+          notes?: string | null
+          price_per_share: number
+          shares: number
+          transacted_at?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          commission?: number
+          created_at?: string
+          holding_id?: string
+          id?: string
+          notes?: string | null
+          price_per_share?: number
+          shares?: number
+          transacted_at?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "holding_transactions_holding_id_fkey"
+            columns: ["holding_id"]
+            isOneToOne: false
+            referencedRelation: "portfolio_holdings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "holding_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       net_worth_categories: {
         Row: {
           created_at: string
@@ -115,8 +169,8 @@ export type Database = {
       }
       net_worth_entries: {
         Row: {
-          created_at: string
           category_id: string | null
+          created_at: string
           currency: string
           description: string | null
           entry_type: string
@@ -126,8 +180,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          created_at?: string
           category_id?: string | null
+          created_at?: string
           currency?: string
           description?: string | null
           entry_type: string
@@ -137,8 +191,8 @@ export type Database = {
           user_id: string
         }
         Update: {
-          created_at?: string
           category_id?: string | null
+          created_at?: string
           currency?: string
           description?: string | null
           entry_type?: string
@@ -199,30 +253,6 @@ export type Database = {
           },
         ]
       }
-      profiles: {
-        Row: {
-          default_account_id: string | null
-          default_category_id: string | null
-          display_currency: string | null
-          id: string
-          updated_at: string | null
-        }
-        Insert: {
-          default_account_id?: string | null
-          default_category_id?: string | null
-          display_currency?: string | null
-          id: string
-          updated_at?: string | null
-        }
-        Update: {
-          default_account_id?: string | null
-          default_category_id?: string | null
-          display_currency?: string | null
-          id?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       portfolio_holdings: {
         Row: {
           asset_type: string
@@ -264,56 +294,41 @@ export type Database = {
           },
         ]
       }
-      holding_transactions: {
+      profiles: {
         Row: {
-          commission: number
-          created_at: string
-          holding_id: string
+          default_account_id: string | null
+          default_category_id: string | null
+          display_currency: string | null
           id: string
-          notes: string | null
-          price_per_share: number
-          shares: number
-          transacted_at: string
-          type: string
-          user_id: string
+          updated_at: string | null
         }
         Insert: {
-          commission?: number
-          created_at?: string
-          holding_id: string
-          id?: string
-          notes?: string | null
-          price_per_share: number
-          shares: number
-          transacted_at?: string
-          type: string
-          user_id: string
+          default_account_id?: string | null
+          default_category_id?: string | null
+          display_currency?: string | null
+          id: string
+          updated_at?: string | null
         }
         Update: {
-          commission?: number
-          created_at?: string
-          holding_id?: string
+          default_account_id?: string | null
+          default_category_id?: string | null
+          display_currency?: string | null
           id?: string
-          notes?: string | null
-          price_per_share?: number
-          shares?: number
-          transacted_at?: string
-          type?: string
-          user_id?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "holding_transactions_holding_id_fkey"
-            columns: ["holding_id"]
+            foreignKeyName: "profiles_default_account_id_fkey"
+            columns: ["default_account_id"]
             isOneToOne: false
-            referencedRelation: "portfolio_holdings"
+            referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "holding_transactions_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "profiles_default_category_id_fkey"
+            columns: ["default_category_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "categories"
             referencedColumns: ["id"]
           },
         ]
@@ -388,18 +403,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      purge_demo_user: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      },
-      purge_stale_demo_users: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      },
-      seed_demo_data: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      },
+      purge_demo_user: { Args: never; Returns: undefined }
+      purge_stale_demo_users: { Args: never; Returns: undefined }
+      seed_demo_data: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
