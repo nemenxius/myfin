@@ -398,12 +398,12 @@ Record for the executor (do not run — requires the user's Supabase dashboard):
 - Modify: `components/auth/user-menu.tsx` (label, line 39)
 
 **Interfaces:**
-- Consumes: `supabaseClient` (`lib/supabase/client.ts`), `useAuth()` shape (`user: User | null`, `isLoading: boolean`, `signOut: () => Promise<void>`), RPC `purge_demo_user` from Task 1.
-- Produces: `signOut()` that permanently purges anonymous demo sessions before signing out; `UserMenu` showing "Demo account" for anonymous users. Tasks 3-4 rely on this behavior for "Exit demo".
+- Consumes: `supabaseClient` (`lib/supabase/client.ts`), `useAuth()` shape (`user: User | null`, `isLoading: boolean`, `signOut: () => Promise<{ error: AuthError | null }>`), RPC `purge_demo_user` from Task 1.
+- Produces: `signOut()` that permanently purges anonymous demo sessions before signing out and **returns the sign-out result** so callers can detect failure (only redirect after success — QA-fix commit 615a58b); `UserMenu` showing "Demo account" for anonymous users. Tasks 3-4 rely on this behavior for "Exit demo".
 
 - [ ] **Step 1: Modify `signOut` in `hooks/use-auth.tsx`**
 
-Replace the `signOut` callback (current lines 53-55) so anonymous users purge their sandbox first:
+Replace the `signOut` callback (current lines 53-55) so anonymous users purge their sandbox first and the sign-out result is surfaced (not swallowed — supabase-js resolves sign-out failures as `{ error }` rather than throwing, so callers like the banner must be able to observe it):
 
 ```tsx
   const signOut = useCallback(async () => {
@@ -412,14 +412,16 @@ Replace the `signOut` callback (current lines 53-55) so anonymous users purge th
       try {
         await supabaseClient.rpc("purge_demo_user");
       } catch {
-        // Cleanup errors must never block sign-out.
+        // Cleanup errors must never block sign-out; the 24h sweep is the backstop.
       }
     }
-    await supabaseClient.auth.signOut();
+    // Surface the sign-out result so callers can distinguish success from
+    // failure (e.g. only navigate away when the session is actually gone).
+    return supabaseClient.auth.signOut();
   }, [user]);
 ```
 
-The `useCallback` dependency changes from `[]` to `[user]` — required so the callback closes over the current user.
+The `useCallback` dependency changes from `[]` to `[user]` — required so the callback closes over the current user. The `AuthContextValue` interface and default context value change accordingly (`signOut: () => Promise<{ error: AuthError | null }>`; default `async () => ({ error: null })`, with `AuthError` added to the `@supabase/supabase-js` type import). All consumers (`user-menu.tsx`, `settings/page.tsx`) ignore the return value, so the contract change is backward-compatible.
 
 - [ ] **Step 2: Modify the user menu label in `components/auth/user-menu.tsx`**
 
@@ -675,7 +677,17 @@ export function DemoBanner() {
   if (!user?.is_anonymous) return null;
 
   const handleExit = async () => {
-    await signOut(); // anonymous: purges the sandbox permanently
+    setExitError(null);
+    try {
+      const { error } = await signOut(); // anonymous: purges the sandbox permanently
+      if (error) {
+        setExitError("Couldn't leave the demo right now. Please try again.");
+        return;
+      }
+    } catch {
+      setExitError("Couldn't leave the demo right now. Please try again.");
+      return;
+    }
     router.push("/");
     router.refresh();
   };
@@ -687,15 +699,22 @@ export function DemoBanner() {
           You&apos;re exploring a temporary MyFin demo. Changes you make here
           won&apos;t be saved permanently.
         </p>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={handleExit}
-          className="shrink-0"
-        >
-          Exit demo
-        </Button>
+        <div className="flex shrink-0 flex-col items-center gap-1">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleExit}
+            className="shrink-0"
+          >
+            Exit demo
+          </Button>
+          {exitError && (
+            <p className="text-xs text-destructive" role="alert">
+              {exitError}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
