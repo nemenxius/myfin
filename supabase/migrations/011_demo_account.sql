@@ -5,6 +5,8 @@
 --   1. Supabase Dashboard -> Authentication -> Providers -> Anonymous sign-ins: ENABLE
 --   2. pg_cron extension (dashboard Database -> Extensions, or the
 --      CREATE EXTENSION below succeeds from the SQL editor)
+--   Enable pg_cron FIRST (Dashboard -> Database -> Extensions) so the
+--   extension installs into the `cron` schema; then run this migration.
 -- Apply via the Supabase dashboard SQL editor (same as previous migrations).
 
 CREATE EXTENSION IF NOT EXISTS pg_cron;
@@ -101,7 +103,7 @@ BEGIN
     INSERT INTO public.transactions
       (user_id, account_id, category_id, amount, transaction_type, date, description)
     VALUES
-      (v_uid, v_checking_id, v_utilities_id, -(70.00 + v_m * 8.0 + (v_m % 2) * 12.0), 'Expense',
+      (v_uid, v_checking_id, v_utilities_id, -(70.00 + v_m * 5.0 + (v_m % 2) * 10.0), 'Expense',
        (date_trunc('month', CURRENT_DATE) - (v_m || ' months')::interval + interval '8 days')::timestamptz,
        'Utilities bill');
   END LOOP;
