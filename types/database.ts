@@ -388,7 +388,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      purge_demo_user: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      },
+      purge_stale_demo_users: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      },
+      seed_demo_data: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      },
     }
     Enums: {
       [_ in never]: never

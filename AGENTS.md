@@ -213,10 +213,11 @@ supabase gen types typescript --project-id <PROJECT_ID> --schema public > types/
 
 ## 7. Known Follow-Ups
 
-- Demo account: `rpc("seed_demo_data")` / `rpc("purge_demo_user")` are untyped
-  until `types/database.ts` is regenerated after migration 011 is applied
-  remotely — a silently-swallowed typo would fail at runtime, not compile time.
-  (No supabase CLI in this env; regenerate once 011 is live.)
+- Demo account: `types/database.ts` now includes the 011 RPC functions
+  (`seed_demo_data`, `purge_demo_user`, `purge_stale_demo_users`) — hand-added
+  in the exact `supabase gen types` format (no supabase CLI in this env).
+  Re-run `supabase gen types` once migration 011 is applied remotely to
+  confirm no drift; until then the RPC calls are compile-time typed.
 - Tighten transaction insert/update RLS so `category_id` must be global or owned by the same user. Same ownership gap exists on `holding_transactions`: its foreign-ownership EXISTS policy is OR-combined with the `auth.uid()` ALL policy, so a user could insert a transaction referencing another user's `holding_id`. Migration 007 is not yet applied remotely, so an in-file fix is cheap before applying.
 - Net worth entries UPDATE RLS (010) now checks `auth.uid() = user_id` in `WITH CHECK`; the pre-existing transaction/holding foreign-ownership gaps above remain open.
 - Add UI feedback for failed category/account delete mutations instead of silent optimistic rollback. Same class applies to portfolio holding/transaction deletes.
