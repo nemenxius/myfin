@@ -73,6 +73,15 @@ export function CategoryList() {
         </Button>
       </div>
 
+      {deleteCategory.error && (
+        <p
+          role="alert"
+          className="mb-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+        >
+          Couldn&apos;t delete this category. Please try again.
+        </p>
+      )}
+
       {isLoading ? (
         <div className="flex h-24 items-center justify-center text-sm text-muted-foreground">
           Loading…

@@ -117,6 +117,15 @@ export function AccountList() {
       </CardHeader>
 
       <CardContent>
+        {deleteAccount.error && (
+          <p
+            role="alert"
+            className="mb-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+          >
+            Couldn&apos;t delete this account. Please try again.
+          </p>
+        )}
+
         {isLoading ? (
           <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
             Loading…
