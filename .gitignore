@@ -9,3 +9,6 @@ build
 next-env.d.ts
 supabase/.temp
 .agents
+
+# Local worktrees
+.worktrees
