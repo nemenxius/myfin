@@ -213,6 +213,16 @@ supabase gen types typescript --project-id <PROJECT_ID> --schema public > types/
 
 ## 7. Known Follow-Ups
 
+- Next 16.3 Turbopack RSC race: calling `router.push()` (or `replace`) and
+  `router.refresh()` back-to-back fires two concurrent RSC flight fetches and
+  can crash the flight client with `Cannot read properties of null (reading
+  'enqueueModel')` (vercel/next.js#92362; the flight client then stays
+  corrupted until a full page reload). Fix: navigate with `push()`/`replace()`
+  alone — the target route is always freshly server-rendered; `refresh()` is
+  only meaningful when staying on the same page. Removed the redundant
+  `refresh()` from try-demo-button, auth-form, user-menu, demo-banner, and
+  settings sign-out. Do not reintroduce the push+refresh pair.
+
 - Demo account: `types/database.ts` regenerated with the Supabase CLI
   (v2.113.0 via npx) on 2026-08-11, after migration 011 was applied remotely —
   the 011 RPC functions (`seed_demo_data`, `purge_demo_user`,

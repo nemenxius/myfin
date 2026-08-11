@@ -22,7 +22,6 @@ export function UserMenu() {
   const handleSignOut = async () => {
     await signOut();
     router.push("/");
-    router.refresh();
   };
 
   return (

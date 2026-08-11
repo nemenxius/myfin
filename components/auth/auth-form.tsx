@@ -72,7 +72,6 @@ export function AuthForm({
       return;
     }
     router.push("/dashboard");
-    router.refresh();
   };
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {

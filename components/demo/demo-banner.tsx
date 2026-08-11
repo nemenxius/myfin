@@ -48,7 +48,6 @@ export function DemoBanner() {
       return;
     }
     router.push("/");
-    router.refresh();
   };
 
   return (

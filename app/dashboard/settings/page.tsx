@@ -123,7 +123,6 @@ export default function SettingsPage() {
   const handleSignOut = async () => {
     await signOut();
     router.push("/");
-    router.refresh();
   };
 
   return (

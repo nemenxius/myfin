@@ -59,7 +59,6 @@ export function TryDemoButton({
 
     setLoading(false);
     router.push("/dashboard");
-    router.refresh();
   };
 
   if (user || isLoading) return null;
