@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { CURRENCIES } from "@/components/accounts/account-currencies";
 import { Logo } from "@/components/brand/logo";
+import { TryDemoButton } from "@/components/demo/try-demo-button";
 
 type Mode = "signin" | "signup";
 
@@ -280,6 +281,10 @@ export function AuthForm({
                   : "Create account"}
             </Button>
           </form>
+        </div>
+
+        <div className="flex justify-center">
+          <TryDemoButton variant="ghost" className="text-sm" />
         </div>
       </div>
     </main>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { HeroVisual } from "./hero-visual";
 import { Button } from "@/components/ui/button";
+import { TryDemoButton } from "@/components/demo/try-demo-button";
 
 export function Hero() {
   return (
@@ -33,6 +34,9 @@ export function Hero() {
           >
             Sign in
           </Button>
+          <TryDemoButton
+            className="h-12 rounded-xl border-border bg-background px-6 shadow-sm hover:bg-muted"
+          />
         </div>
       </div>
 

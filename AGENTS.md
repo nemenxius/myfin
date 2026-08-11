@@ -38,6 +38,7 @@ components/
   brand/                    # Logo
   categories/               # Category CRUD UI and Lucide icon renderer
   dashboard/                # Header, mobile-nav, stat cards, month selector, chart, side panel
+  demo/                     # Try-demo CTA + demo banner (anonymous sandbox)
   landing/                  # Marketing page header/hero/hero-visual (app-preview mock)
   net-worth/                # Net worth summary, evolution chart, entry lists/forms, category management
   portfolio/                # Holding form, holdings table, charts
@@ -157,6 +158,11 @@ Migration state to preserve:
 - `008_net_worth.sql`: `net_worth_entries` (asset/liability via `entry_type`) + `net_worth_snapshots` tables, RLS, and a `SECURITY DEFINER` trigger (`record_net_worth_snapshot`) that records a snapshot whenever an entry write changes the user's net worth (dedupes when unchanged). Run remotely on 2026-08-06. **Dependency:** 008's `set_updated_at` trigger requires the `set_updated_at()` function from 007 — apply 007 before 008.
 - `009_net_worth_value_history.sql`: replaces 008's snapshot model — wipes existing 008 test data (TRUNCATE), drops the `net_worth_snapshots` table + `record_net_worth_snapshot()` trigger, drops `net_worth_entries.value`, and adds `net_worth_entry_values` (one dated value per entry/date) with RLS via the parent entry. Run remotely on 2026-08-08.
 - `010_net_worth_categories.sql`: `net_worth_categories` table (global `user_id IS NULL` read-only defaults + user custom), nullable `net_worth_entries.category_id` (ON DELETE SET NULL), tightened INSERT/UPDATE RLS on `net_worth_entries` so `category_id` must be global or owned. Run remotely on 2026-08-08; seed defaults (Money, P2P, Stock Exchange, PPR) also applied from `seed.sql`.
+- `011_demo_account.sql`: hardened SECURITY DEFINER functions
+  `seed_demo_data()` / `purge_demo_user()` / `purge_stale_demo_users()`
+  + hourly `pg_cron` sweep (`purge-stale-demo-users`). No table changes.
+  Requires anonymous sign-ins enabled in the dashboard and the `pg_cron`
+  extension. Run remotely via dashboard SQL editor.
 
 After schema changes, regenerate types with:
 
@@ -198,9 +204,19 @@ supabase gen types typescript --project-id <PROJECT_ID> --schema public > types/
   responsive preview of the real dashboard (stat cards, monthly spending chart,
   running-balance ledger, floating "By category" donut chip) using brand tokens —
   not a generic mock. Keep it in sync if dashboard components change shape.
+- Demo account: anonymous visitors can explore the app without registering.
+  "Try demo" (landing hero/header + auth page) signs into a private
+  anonymous sandbox seeded with a coherent all-EUR dataset spanning ~6
+  months across accounts, transactions, portfolio, and net worth.
+  Anonymous sign-out PERMANENTLY purges the sandbox (FK cascade); a
+  pg_cron job sweeps abandoned sessions after 24h of inactivity.
 
 ## 7. Known Follow-Ups
 
+- Demo account: `rpc("seed_demo_data")` / `rpc("purge_demo_user")` are untyped
+  until `types/database.ts` is regenerated after migration 011 is applied
+  remotely — a silently-swallowed typo would fail at runtime, not compile time.
+  (No supabase CLI in this env; regenerate once 011 is live.)
 - Tighten transaction insert/update RLS so `category_id` must be global or owned by the same user. Same ownership gap exists on `holding_transactions`: its foreign-ownership EXISTS policy is OR-combined with the `auth.uid()` ALL policy, so a user could insert a transaction referencing another user's `holding_id`. Migration 007 is not yet applied remotely, so an in-file fix is cheap before applying.
 - Net worth entries UPDATE RLS (010) now checks `auth.uid() = user_id` in `WITH CHECK`; the pre-existing transaction/holding foreign-ownership gaps above remain open.
 - Add UI feedback for failed category/account delete mutations instead of silent optimistic rollback. Same class applies to portfolio holding/transaction deletes.

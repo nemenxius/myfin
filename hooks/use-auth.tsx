@@ -8,19 +8,19 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { User } from "@supabase/supabase-js";
+import type { AuthError, User } from "@supabase/supabase-js";
 import { supabaseClient } from "@/lib/supabase/client";
 
 interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
-  signOut: () => Promise<void>;
+  signOut: () => Promise<{ error: AuthError | null }>;
 }
 
 const AuthContext = createContext<AuthContextValue>({
   user: null,
   isLoading: true,
-  signOut: async () => {},
+  signOut: async () => ({ error: null }),
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -51,8 +51,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    await supabaseClient.auth.signOut();
-  }, []);
+    if (user?.is_anonymous) {
+      // Demo sandbox: purge permanently; never surface cleanup errors.
+      try {
+        await supabaseClient.rpc("purge_demo_user");
+      } catch {
+        // Cleanup errors must never block sign-out; the 24h sweep is the backstop.
+      }
+    }
+    // Surface the sign-out result so callers can distinguish success from
+    // failure (e.g. only navigate away when the session is actually gone).
+    return supabaseClient.auth.signOut();
+  }, [user]);
 
   return (
     <AuthContext.Provider value={{ user, isLoading, signOut }}>
