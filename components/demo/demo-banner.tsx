@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabaseClient } from "@/lib/supabase/client";
@@ -11,6 +11,7 @@ export function DemoBanner() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user, signOut } = useAuth();
+  const [exitError, setExitError] = useState<string | null>(null);
 
   // Safety net: after a hard reload the anonymous session may exist without
   // seeded data. seed_demo_data is idempotent, so re-calling it is harmless.
@@ -35,7 +36,17 @@ export function DemoBanner() {
   if (!user?.is_anonymous) return null;
 
   const handleExit = async () => {
-    await signOut(); // anonymous: purges the sandbox permanently
+    setExitError(null);
+    try {
+      const { error } = await signOut(); // anonymous: purges the sandbox permanently
+      if (error) {
+        setExitError("Couldn't leave the demo right now. Please try again.");
+        return;
+      }
+    } catch {
+      setExitError("Couldn't leave the demo right now. Please try again.");
+      return;
+    }
     router.push("/");
     router.refresh();
   };
@@ -47,15 +58,22 @@ export function DemoBanner() {
           You&apos;re exploring a temporary MyFin demo. Changes you make here
           won&apos;t be saved permanently.
         </p>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={handleExit}
-          className="shrink-0"
-        >
-          Exit demo
-        </Button>
+        <div className="flex shrink-0 flex-col items-center gap-1">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleExit}
+            className="shrink-0"
+          >
+            Exit demo
+          </Button>
+          {exitError && (
+            <p className="text-xs text-destructive" role="alert">
+              {exitError}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
