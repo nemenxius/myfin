@@ -83,6 +83,9 @@ DECLARE
   v_ppr_id uuid;
   v_credit_id uuid;
   v_loan_id uuid;
+  v_money_cat_id uuid;
+  v_stock_cat_id uuid;
+  v_ppr_cat_id uuid;
   v_m int;
   v_month_end date;
   v_has_default_account_col boolean;
@@ -122,6 +125,11 @@ BEGIN
   SELECT id INTO v_utilities_id FROM public.categories WHERE user_id IS NULL AND name = 'Utilities' LIMIT 1;
   SELECT id INTO v_salary_id FROM public.categories WHERE user_id IS NULL AND name = 'Salary' LIMIT 1;
   SELECT id INTO v_investment_income_id FROM public.categories WHERE user_id IS NULL AND name = 'Investment Income' LIMIT 1;
+
+  -- Net worth categories (global defaults; NULL when a row is missing)
+  SELECT id INTO v_money_cat_id FROM public.net_worth_categories WHERE user_id IS NULL AND name = 'Money' LIMIT 1;
+  SELECT id INTO v_stock_cat_id FROM public.net_worth_categories WHERE user_id IS NULL AND name = 'Stock Exchange' LIMIT 1;
+  SELECT id INTO v_ppr_cat_id FROM public.net_worth_categories WHERE user_id IS NULL AND name = 'PPR' LIMIT 1;
 
   -- ---- Transactions: monthly rhythm over the past 6 months ----------
   FOR v_m IN 1..6 LOOP
@@ -204,17 +212,17 @@ BEGIN
     (v_btc_id, v_uid, 'buy', 0.05, 60000.00, 2.00, (CURRENT_DATE - interval '110 days')::timestamptz, 'Initial buy'),
     (v_btc_id, v_uid, 'buy', 0.02, 72000.00, 2.00, (CURRENT_DATE - interval '25 days')::timestamptz, 'Top-up');
 
-  -- ---- Net worth entries (EUR) + 6 monthly value rows each ----------
-  INSERT INTO public.net_worth_entries (user_id, entry_type, name, description, currency)
-  VALUES (v_uid, 'asset', 'Emergency fund', 'Liquid savings buffer', 'EUR')
+  -- ---- Net worth entries (EUR, assets categorized) + 6 value rows ---
+  INSERT INTO public.net_worth_entries (user_id, entry_type, name, description, currency, category_id)
+  VALUES (v_uid, 'asset', 'Emergency fund', 'Liquid savings buffer', 'EUR', v_money_cat_id)
   RETURNING id INTO v_emergency_id;
 
-  INSERT INTO public.net_worth_entries (user_id, entry_type, name, description, currency)
-  VALUES (v_uid, 'asset', 'Investments', 'Index funds and crypto', 'EUR')
+  INSERT INTO public.net_worth_entries (user_id, entry_type, name, description, currency, category_id)
+  VALUES (v_uid, 'asset', 'Investments', 'Index funds and crypto', 'EUR', v_stock_cat_id)
   RETURNING id INTO v_investments_id;
 
-  INSERT INTO public.net_worth_entries (user_id, entry_type, name, description, currency)
-  VALUES (v_uid, 'asset', 'PPR', 'Retirement savings plan', 'EUR')
+  INSERT INTO public.net_worth_entries (user_id, entry_type, name, description, currency, category_id)
+  VALUES (v_uid, 'asset', 'PPR', 'Retirement savings plan', 'EUR', v_ppr_cat_id)
   RETURNING id INTO v_ppr_id;
 
   INSERT INTO public.net_worth_entries (user_id, entry_type, name, description, currency)
@@ -497,7 +505,15 @@ export function TryDemoButton({
       return;
     }
 
-    const { error: seedError } = await supabaseClient.rpc("seed_demo_data");
+    let seedError: { message: string } | null = null;
+    try {
+      const { error } = await supabaseClient.rpc("seed_demo_data");
+      seedError = error;
+    } catch {
+      seedError = {
+        message: "Couldn't reach the server. Check your connection and try again.",
+      };
+    }
     if (seedError) {
       // Best-effort cleanup: don't strand an empty sandbox. Errors here are
       // swallowed; the visitor sees the ORIGINAL seed error.
@@ -565,10 +581,16 @@ import { TryDemoButton } from "@/components/demo/try-demo-button";
 ```
 
 ```tsx
-        <TryDemoButton
-          className="rounded-full border-border bg-background px-4 text-foreground hover:bg-muted sm:px-5"
-        />
+        <div className="hidden sm:block">
+          <TryDemoButton
+            className="rounded-full border-border bg-background px-4 text-foreground hover:bg-muted sm:px-5"
+          />
+        </div>
 ```
+
+Note: the header CTA is hidden below `sm` to avoid a 3-CTA overflow on small
+viewports (QA finding F4); mobile visitors still get the demo CTA on the hero
+and auth page.
 
 - [ ] **Step 4: Add the demo link to the auth page (`components/auth/auth-form.tsx`)**
 
