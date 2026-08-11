@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { TryDemoButton } from "@/components/demo/try-demo-button";
 
 export function Header() {
   return (
@@ -21,6 +22,9 @@ export function Header() {
         >
           Create Account
         </Button>
+        <TryDemoButton
+          className="rounded-full border-border bg-background px-4 text-foreground hover:bg-muted sm:px-5"
+        />
         <Button
           render={<Link href="/auth?mode=signin" />}
           nativeButton={false}
