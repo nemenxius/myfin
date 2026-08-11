@@ -34,7 +34,15 @@ export function TryDemoButton({
       return;
     }
 
-    const { error: seedError } = await supabaseClient.rpc("seed_demo_data");
+    let seedError: { message: string } | null = null;
+    try {
+      const { error } = await supabaseClient.rpc("seed_demo_data");
+      seedError = error;
+    } catch {
+      seedError = {
+        message: "Couldn't reach the server. Check your connection and try again.",
+      };
+    }
     if (seedError) {
       // Best-effort cleanup: don't strand an empty sandbox. Errors here are
       // swallowed; the visitor sees the ORIGINAL seed error.

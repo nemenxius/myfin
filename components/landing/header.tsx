@@ -22,9 +22,11 @@ export function Header() {
         >
           Create Account
         </Button>
-        <TryDemoButton
-          className="rounded-full border-border bg-background px-4 text-foreground hover:bg-muted sm:px-5"
-        />
+        <div className="hidden sm:block">
+          <TryDemoButton
+            className="rounded-full border-border bg-background px-4 text-foreground hover:bg-muted sm:px-5"
+          />
+        </div>
         <Button
           render={<Link href="/auth?mode=signin" />}
           nativeButton={false}
