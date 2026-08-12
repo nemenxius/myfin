@@ -15,7 +15,12 @@ export function LandingAction({
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
-    return <span aria-hidden className={`${className} animate-pulse bg-muted`} />;
+    return (
+      <span
+        aria-hidden
+        className={`${className} inline-block animate-pulse bg-muted`}
+      />
+    );
   }
 
   if (hideForAnonymous && user?.is_anonymous) return null;

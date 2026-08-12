@@ -24,3 +24,11 @@
 ## Concerns
 
 - No browser session was available, so state checks were performed statically rather than through a live browser session.
+
+## Review Finding Fix Validation
+
+- `npx tsc --noEmit` — passed (exit code 0; no output).
+- `npm test -- --run` — passed: 6 test files, 55 tests. Existing Vite native config warning emitted.
+- `git diff --check` — passed (exit code 0; no output).
+- `NEXT_PUBLIC_SUPABASE_URL='https://example.supabase.co' NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY='sb_publishable_test_placeholder' npm run build` — passed: production build compiled, TypeScript completed, and 16 static pages generated.
+- Fix: loading placeholders now include `inline-block`, so caller-provided height/width dimensions visibly apply; `aria-hidden`, pulse styling, and all auth branches are unchanged.
