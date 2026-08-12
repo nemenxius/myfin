@@ -6,7 +6,7 @@ type Transaction = Tables<"transactions">;
 type TransactionInsert = TablesInsert<"transactions">;
 type TransactionInput = Omit<TransactionInsert, "user_id">;
 
-const queryKey = ["transactions"] as const;
+const baseQueryKey = ["transactions"] as const;
 
 const fetchTransactions = async (): Promise<Transaction[]> => {
   const { data, error } = await supabaseClient
@@ -26,12 +26,19 @@ const getCurrentUserId = async (): Promise<string> => {
   return user.id;
 };
 
-export function useTransactions() {
+export function useTransactions(month?: string) {
   const queryClient = useQueryClient();
+  const queryKey = month ? (["transactions", month] as const) : baseQueryKey;
 
   const transactionsQuery = useQuery({
     queryKey,
-    queryFn: fetchTransactions,
+    queryFn: async () => {
+      if (month) {
+        const { error } = await supabaseClient.rpc("materialize_recurring_transactions", { p_month: month });
+        if (error) throw error;
+      }
+      return fetchTransactions();
+    },
   });
 
   const addTransaction = useMutation({
@@ -47,7 +54,7 @@ export function useTransactions() {
       return data;
     },
     onMutate: async (newTransaction) => {
-      await queryClient.cancelQueries({ queryKey });
+      await queryClient.cancelQueries({ queryKey: baseQueryKey });
 
       const previous = queryClient.getQueryData<Transaction[]>(queryKey);
       const user_id = await getCurrentUserId();
@@ -65,7 +72,7 @@ export function useTransactions() {
         recurring_transaction_id: null,
       };
 
-      queryClient.setQueryData<Transaction[]>(queryKey, (old) => [
+      queryClient.setQueriesData<Transaction[]>({ queryKey: baseQueryKey }, (old) => [
         optimistic,
         ...(old ?? []),
       ]);
@@ -77,7 +84,7 @@ export function useTransactions() {
         queryClient.setQueryData(queryKey, context.previous);
       }
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: baseQueryKey }),
   });
 
   const updateTransaction = useMutation({
@@ -96,11 +103,11 @@ export function useTransactions() {
       return data;
     },
     onMutate: async ({ id, ...updates }) => {
-      await queryClient.cancelQueries({ queryKey });
+      await queryClient.cancelQueries({ queryKey: baseQueryKey });
 
       const previous = queryClient.getQueryData<Transaction[]>(queryKey);
 
-      queryClient.setQueryData<Transaction[]>(queryKey, (old) =>
+      queryClient.setQueriesData<Transaction[]>({ queryKey: baseQueryKey }, (old) =>
         (old ?? []).map((transaction) =>
           transaction.id === id ? { ...transaction, ...updates } : transaction
         )
@@ -113,7 +120,7 @@ export function useTransactions() {
         queryClient.setQueryData(queryKey, context.previous);
       }
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: baseQueryKey }),
   });
 
   const deleteTransaction = useMutation({
@@ -126,11 +133,11 @@ export function useTransactions() {
       if (error) throw error;
     },
     onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey });
+      await queryClient.cancelQueries({ queryKey: baseQueryKey });
 
       const previous = queryClient.getQueryData<Transaction[]>(queryKey);
 
-      queryClient.setQueryData<Transaction[]>(queryKey, (old) =>
+      queryClient.setQueriesData<Transaction[]>({ queryKey: baseQueryKey }, (old) =>
         (old ?? []).filter((transaction) => transaction.id !== id)
       );
 
@@ -141,7 +148,7 @@ export function useTransactions() {
         queryClient.setQueryData(queryKey, context.previous);
       }
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: baseQueryKey }),
   });
 
   return {

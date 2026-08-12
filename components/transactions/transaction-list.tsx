@@ -55,7 +55,7 @@ const typeStyles: Record<string, string> = {
 };
 
 export function TransactionList({ month }: { month: string }) {
-   const { data: transactions, isLoading, deleteTransaction } = useTransactions();
+   const { data: transactions, isLoading, deleteTransaction } = useTransactions(month);
    const { currency } = usePrimaryCurrency();
    const { data: categories } = useCategories();
    const { data: accounts } = useAccounts();

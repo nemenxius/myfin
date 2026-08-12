@@ -16,7 +16,7 @@ import { monthLabel, monthWindow } from "@/lib/month";
 import { StatCard } from "./stat-card";
 
 export function StatCards({ month }: { month: string }) {
-  const { data: transactions, isLoading } = useTransactions();
+  const { data: transactions, isLoading } = useTransactions(month);
   const { data: accounts } = useAccounts();
   const { currency } = usePrimaryCurrency();
 
