@@ -34,6 +34,12 @@ export async function updateSession(request: NextRequest) {
   const isProtected =
     pathname.startsWith("/dashboard") || pathname === "/onboarding";
 
+  if (pathname === "/" && user && !user.is_anonymous) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    return NextResponse.redirect(url);
+  }
+
   if (isProtected && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth";
@@ -55,5 +61,5 @@ export default async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/auth/:path*", "/dashboard/:path*", "/dashboard", "/onboarding"],
+  matcher: ["/", "/auth/:path*", "/dashboard/:path*", "/dashboard", "/onboarding"],
 };
