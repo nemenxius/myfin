@@ -5,6 +5,7 @@ import { Plus, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNetWorth, type EntryType, type EntryWithValues } from "@/hooks/use-net-worth";
 import { NetWorthSummary } from "./net-worth-summary";
+import { NetWorthCategoryBreakdown } from "./net-worth-category-breakdown";
 import { NetWorthChart } from "./net-worth-chart";
 import { EntryList } from "./entry-list";
 import { EntryForm } from "./entry-form";
@@ -81,6 +82,7 @@ export function NetWorthOverview() {
       ) : (
         <>
           <NetWorthSummary />
+          <NetWorthCategoryBreakdown />
           <NetWorthChart />
           <EntryList
             entryType="asset"
