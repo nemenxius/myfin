@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TryDemoButton } from "@/components/demo/try-demo-button";
+import { LandingAction } from "./landing-action";
 
 export function Header() {
   return (
@@ -14,26 +15,38 @@ export function Header() {
       </Link>
 
       <div className="flex items-center gap-2 sm:gap-3">
-        <Button
-          render={<Link href="/auth?mode=signup" />}
-          nativeButton={false}
-          variant="outline"
-          className="rounded-full border-border bg-background px-4 text-foreground hover:bg-muted sm:px-5"
+        <LandingAction
+          hideForAnonymous
+          className="h-8 w-28 rounded-full sm:w-32"
         >
-          Create Account
-        </Button>
-        <div className="hidden sm:block">
-          <TryDemoButton
+          <Button
+            render={<Link href="/auth?mode=signup" />}
+            nativeButton={false}
+            variant="outline"
             className="rounded-full border-border bg-background px-4 text-foreground hover:bg-muted sm:px-5"
-          />
+          >
+            Create Account
+          </Button>
+        </LandingAction>
+        <div className="hidden sm:block">
+          <LandingAction className="h-8 w-24 rounded-full sm:w-28">
+            <TryDemoButton
+              className="rounded-full border-border bg-background px-4 text-foreground hover:bg-muted sm:px-5"
+            />
+          </LandingAction>
         </div>
-        <Button
-          render={<Link href="/auth?mode=signin" />}
-          nativeButton={false}
-          className="rounded-full bg-primary px-4 text-primary-foreground hover:bg-primary/90 sm:px-5"
+        <LandingAction
+          hideForAnonymous
+          className="h-8 w-16 rounded-full sm:w-20"
         >
-          Sign In
-        </Button>
+          <Button
+            render={<Link href="/auth?mode=signin" />}
+            nativeButton={false}
+            className="rounded-full bg-primary px-4 text-primary-foreground hover:bg-primary/90 sm:px-5"
+          >
+            Sign In
+          </Button>
+        </LandingAction>
       </div>
     </header>
   );
