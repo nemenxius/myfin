@@ -2,6 +2,7 @@ import Link from "next/link";
 import { HeroVisual } from "./hero-visual";
 import { Button } from "@/components/ui/button";
 import { TryDemoButton } from "@/components/demo/try-demo-button";
+import { LandingAction } from "./landing-action";
 
 export function Hero() {
   return (
@@ -19,24 +20,36 @@ export function Hero() {
           — with clear charts and a running-balance ledger, all in one place.
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          <Button
-            render={<Link href="/auth?mode=signup" />}
-            nativeButton={false}
-            className="h-12 rounded-xl bg-primary px-6 text-primary-foreground shadow-sm hover:bg-primary/90"
+          <LandingAction
+            hideForAnonymous
+            className="h-12 w-44 rounded-xl"
           >
-            Create free account
-          </Button>
-          <Button
-            render={<Link href="/auth?mode=signin" />}
-            nativeButton={false}
-            variant="outline"
-            className="h-12 rounded-xl border-border bg-background px-6 shadow-sm hover:bg-muted"
+            <Button
+              render={<Link href="/auth?mode=signup" />}
+              nativeButton={false}
+              className="h-12 rounded-xl bg-primary px-6 text-primary-foreground shadow-sm hover:bg-primary/90"
+            >
+              Create free account
+            </Button>
+          </LandingAction>
+          <LandingAction
+            hideForAnonymous
+            className="h-12 w-24 rounded-xl"
           >
-            Sign in
-          </Button>
-          <TryDemoButton
-            className="h-12 rounded-xl border-border bg-background px-6 shadow-sm hover:bg-muted"
-          />
+            <Button
+              render={<Link href="/auth?mode=signin" />}
+              nativeButton={false}
+              variant="outline"
+              className="h-12 rounded-xl border-border bg-background px-6 shadow-sm hover:bg-muted"
+            >
+              Sign in
+            </Button>
+          </LandingAction>
+          <LandingAction className="h-12 w-24 rounded-xl">
+            <TryDemoButton
+              className="h-12 rounded-xl border-border bg-background px-6 shadow-sm hover:bg-muted"
+            />
+          </LandingAction>
         </div>
       </div>
 
