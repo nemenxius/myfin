@@ -15,12 +15,14 @@ interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
   signOut: () => Promise<{ error: AuthError | null }>;
+  leaveDemoForAuth: () => Promise<{ error: Error | AuthError | null }>;
 }
 
 const AuthContext = createContext<AuthContextValue>({
   user: null,
   isLoading: true,
   signOut: async () => ({ error: null }),
+  leaveDemoForAuth: async () => ({ error: null }),
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -66,8 +68,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       : supabaseClient.auth.signOut();
   }, [user]);
 
+  const leaveDemoForAuth = useCallback(async () => {
+    if (!user?.is_anonymous) return { error: null };
+
+    const { error: purgeError } = await supabaseClient.rpc("purge_demo_user");
+    if (purgeError) return { error: purgeError };
+
+    return supabaseClient.auth.signOut({ scope: "local" });
+  }, [user]);
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, signOut }}>
+    <AuthContext.Provider value={{ user, isLoading, signOut, leaveDemoForAuth }}>
       {children}
     </AuthContext.Provider>
   );

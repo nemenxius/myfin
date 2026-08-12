@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { MailCheck } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 import { supabaseClient } from "@/lib/supabase/client";
 import { setPendingDisplayCurrency } from "@/lib/pending-display-currency";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ export function AuthForm({
   initialError?: string;
 }) {
   const router = useRouter();
+  const { user, isLoading: authLoading, leaveDemoForAuth } = useAuth();
   const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -49,18 +51,43 @@ export function AuthForm({
     setError(null);
   };
 
+  const leaveDemoIfNeeded = async () => {
+    if (!user?.is_anonymous) return true;
+
+    const { error } = await leaveDemoForAuth();
+    if (error) {
+      setError("Couldn't leave the demo right now. Please try again.");
+      return false;
+    }
+
+    return true;
+  };
+
   const handleGoogle = async () => {
+    if (authLoading) return;
     setError(null);
-    const { error } = await supabaseClient.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
-    if (error) setError(error.message);
+    try {
+      if (!(await leaveDemoIfNeeded())) return;
+      const { error } = await supabaseClient.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
+      });
+      if (error) setError(error.message);
+    } catch {
+      setError("Couldn't leave the demo right now. Please try again.");
+    }
   };
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (authLoading) return;
     setError(null);
+    try {
+      if (!(await leaveDemoIfNeeded())) return;
+    } catch {
+      setError("Couldn't leave the demo right now. Please try again.");
+      return;
+    }
     setLoading(true);
     const { error } = await supabaseClient.auth.signInWithPassword({
       email,
@@ -76,7 +103,14 @@ export function AuthForm({
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (authLoading) return;
     setError(null);
+    try {
+      if (!(await leaveDemoIfNeeded())) return;
+    } catch {
+      setError("Couldn't leave the demo right now. Please try again.");
+      return;
+    }
     if (password.length < 8) {
       setError("Password must be at least 8 characters.");
       return;
@@ -141,6 +175,7 @@ export function AuthForm({
             <button
               type="button"
               onClick={() => switchMode("signin")}
+              disabled={authLoading || loading}
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                 mode === "signin"
                   ? "bg-background text-foreground shadow-sm"
@@ -152,6 +187,7 @@ export function AuthForm({
             <button
               type="button"
               onClick={() => switchMode("signup")}
+              disabled={authLoading || loading}
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                 mode === "signup"
                   ? "bg-background text-foreground shadow-sm"
@@ -167,6 +203,7 @@ export function AuthForm({
             variant="outline"
             className="w-full"
             onClick={handleGoogle}
+            disabled={authLoading || loading}
           >
             Continue with Google
           </Button>
@@ -191,6 +228,7 @@ export function AuthForm({
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
+                disabled={authLoading || loading}
               />
             </div>
 
@@ -218,6 +256,7 @@ export function AuthForm({
                 autoComplete={
                   mode === "signin" ? "current-password" : "new-password"
                 }
+                disabled={authLoading || loading}
               />
             </div>
 
@@ -232,6 +271,7 @@ export function AuthForm({
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   autoComplete="new-password"
+                  disabled={authLoading || loading}
                 />
               </div>
             )}
@@ -246,7 +286,11 @@ export function AuthForm({
                   }
                   items={currencyOptions}
                 >
-                  <SelectTrigger id="auth-currency" className="w-full">
+                  <SelectTrigger
+                    id="auth-currency"
+                    className="w-full"
+                    disabled={authLoading || loading}
+                  >
                     <SelectValue placeholder="Select currency" />
                   </SelectTrigger>
                   <SelectContent>
@@ -270,7 +314,11 @@ export function AuthForm({
               </p>
             )}
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={authLoading || loading}
+            >
               {loading
                 ? mode === "signin"
                   ? "Signing in…"
