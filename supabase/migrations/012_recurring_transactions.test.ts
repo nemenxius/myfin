@@ -50,4 +50,16 @@ describe("recurring transaction migration contract", () => {
     expect(migration).not.toMatch(/INSERT INTO public\.recurring_transaction_occurrences[^;]*'skipped'/);
     expect(migration).toMatch(/INSERT INTO public\.recurring_transaction_occurrences \(recurring_transaction_id, occurrence_date\)/);
   });
+
+  it("locks and claims an existing pending occurrence after insert conflicts", () => {
+    expect(migration).toMatch(/ON CONFLICT \(recurring_transaction_id, occurrence_date\) DO NOTHING[\s\S]*SELECT o\.id INTO v_occurrence_id[\s\S]*FROM public\.recurring_transaction_occurrences o[\s\S]*o\.status = 'pending'[\s\S]*FOR UPDATE/);
+    expect(migration).toMatch(/IF v_occurrence_id IS NOT NULL THEN/);
+    expect(migration).toMatch(/status = 'materialized'/);
+  });
+
+  it("requires override transaction type and destination to agree", () => {
+    expect(migration).toMatch(/CHECK \(\(override_transaction_type IS NULL\)[\s\S]*override_transaction_type = 'Transfer' AND override_to_account_id IS NOT NULL[\s\S]*override_transaction_type IN \('Income', 'Expense'\) AND override_to_account_id IS NULL\)/);
+    expect(migration).toMatch(/v_transaction_type = 'Transfer' AND v_to_account_id IS NULL/);
+    expect(migration).toMatch(/v_transaction_type IN \('Income', 'Expense'\) AND v_to_account_id IS NOT NULL/);
+  });
 });

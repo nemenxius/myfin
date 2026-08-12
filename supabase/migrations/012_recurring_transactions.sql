@@ -70,8 +70,9 @@ CREATE TABLE public.recurring_transaction_occurrences (
   override_description TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (recurring_transaction_id, occurrence_date),
-  CHECK ((override_transaction_type = 'Transfer' AND override_to_account_id IS NOT NULL)
-      OR (override_transaction_type IS NULL OR override_transaction_type <> 'Transfer')),
+  CHECK ((override_transaction_type IS NULL)
+      OR (override_transaction_type = 'Transfer' AND override_to_account_id IS NOT NULL)
+      OR (override_transaction_type IN ('Income', 'Expense') AND override_to_account_id IS NULL)),
   CHECK (override_to_account_id IS NULL OR override_account_id IS NULL OR override_to_account_id <> override_account_id)
 );
 
@@ -205,9 +206,15 @@ BEGIN
                EXTRACT(DAY FROM v_date) = LEAST(EXTRACT(DAY FROM v_cadence_start), EXTRACT(DAY FROM (date_trunc('month', v_date) + INTERVAL '1 month - 1 day')::date)) AND
                (EXTRACT(YEAR FROM v_date)::integer - EXTRACT(YEAR FROM v_cadence_start)::integer) % v_cadence_interval = 0)
            )) THEN
+        v_occurrence_id := NULL;
         INSERT INTO public.recurring_transaction_occurrences (recurring_transaction_id, occurrence_date)
-        VALUES (v_rule.id, v_date) ON CONFLICT (recurring_transaction_id, occurrence_date) DO NOTHING
-        RETURNING id INTO v_occurrence_id;
+        VALUES (v_rule.id, v_date) ON CONFLICT (recurring_transaction_id, occurrence_date) DO NOTHING;
+        SELECT o.id INTO v_occurrence_id
+        FROM public.recurring_transaction_occurrences o
+        WHERE o.recurring_transaction_id = v_rule.id
+          AND o.occurrence_date = v_date
+          AND o.status = 'pending'
+        FOR UPDATE;
         IF v_occurrence_id IS NOT NULL THEN
           SELECT COALESCE(o.override_account_id, v_version.account_id, v_rule.account_id),
             COALESCE(o.override_to_account_id, v_version.to_account_id, v_rule.to_account_id),
@@ -222,7 +229,9 @@ BEGIN
              OR (v_category_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.categories WHERE id = v_category_id AND (user_id IS NULL OR user_id = v_uid)))
              OR NOT EXISTS (SELECT 1 FROM public.recurring_transactions WHERE id = v_rule.id AND user_id = v_uid)
              OR v_amount = 0 OR v_amount IN ('Infinity'::numeric, '-Infinity'::numeric)
-             OR (v_to_account_id IS NOT NULL AND v_to_account_id = v_account_id) THEN
+             OR (v_to_account_id IS NOT NULL AND v_to_account_id = v_account_id)
+             OR (v_transaction_type = 'Transfer' AND v_to_account_id IS NULL)
+             OR (v_transaction_type IN ('Income', 'Expense') AND v_to_account_id IS NOT NULL) THEN
             RAISE EXCEPTION 'Invalid resolved account/category ownership or values';
           END IF;
           IF EXISTS (SELECT 1 FROM public.recurring_transaction_occurrences o
