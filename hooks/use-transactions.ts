@@ -5,6 +5,8 @@ import type { Tables, TablesInsert } from "@/types/database";
 type Transaction = Tables<"transactions">;
 type TransactionInsert = TablesInsert<"transactions">;
 type TransactionInput = Omit<TransactionInsert, "user_id">;
+type MutableTransactionFields = Pick<TransactionInsert, "account_id" | "to_account_id" | "category_id" | "amount" | "transaction_type" | "date" | "description">;
+const mutableTransactionKeys: (keyof MutableTransactionFields)[] = ["account_id", "to_account_id", "category_id", "amount", "transaction_type", "date", "description"];
 
 const baseQueryKey = ["transactions"] as const;
 
@@ -56,7 +58,7 @@ export function useTransactions(month?: string) {
     onMutate: async (newTransaction) => {
       await queryClient.cancelQueries({ queryKey: baseQueryKey });
 
-      const previous = queryClient.getQueryData<Transaction[]>(queryKey);
+      const previous = queryClient.getQueriesData<Transaction[]>({ queryKey: baseQueryKey });
       const user_id = await getCurrentUserId();
 
       const optimistic: Transaction = {
@@ -80,9 +82,7 @@ export function useTransactions(month?: string) {
       return { previous };
     },
     onError: (_error, _newTransaction, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(queryKey, context.previous);
-      }
+      context?.previous?.forEach(([key, value]) => queryClient.setQueryData(key, value));
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: baseQueryKey }),
   });
@@ -91,10 +91,11 @@ export function useTransactions(month?: string) {
     mutationFn: async ({
       id,
       ...updates
-    }: { id: string } & Partial<TransactionInsert>): Promise<Transaction> => {
+      }: { id: string } & Partial<MutableTransactionFields>): Promise<Transaction> => {
+      const safeUpdates = Object.fromEntries(mutableTransactionKeys.filter((key) => key in updates).map((key) => [key, updates[key]]));
       const { data, error } = await supabaseClient
         .from("transactions")
-        .update(updates)
+        .update(safeUpdates)
         .eq("id", id)
         .select()
         .single();
@@ -104,21 +105,20 @@ export function useTransactions(month?: string) {
     },
     onMutate: async ({ id, ...updates }) => {
       await queryClient.cancelQueries({ queryKey: baseQueryKey });
+      const safeUpdates = Object.fromEntries(mutableTransactionKeys.filter((key) => key in updates).map((key) => [key, updates[key]]));
 
-      const previous = queryClient.getQueryData<Transaction[]>(queryKey);
+      const previous = queryClient.getQueriesData<Transaction[]>({ queryKey: baseQueryKey });
 
       queryClient.setQueriesData<Transaction[]>({ queryKey: baseQueryKey }, (old) =>
         (old ?? []).map((transaction) =>
-          transaction.id === id ? { ...transaction, ...updates } : transaction
+          transaction.id === id ? { ...transaction, ...safeUpdates } : transaction
         )
       );
 
       return { previous };
     },
     onError: (_error, _updates, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(queryKey, context.previous);
-      }
+      context?.previous?.forEach(([key, value]) => queryClient.setQueryData(key, value));
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: baseQueryKey }),
   });
@@ -135,7 +135,7 @@ export function useTransactions(month?: string) {
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: baseQueryKey });
 
-      const previous = queryClient.getQueryData<Transaction[]>(queryKey);
+      const previous = queryClient.getQueriesData<Transaction[]>({ queryKey: baseQueryKey });
 
       queryClient.setQueriesData<Transaction[]>({ queryKey: baseQueryKey }, (old) =>
         (old ?? []).filter((transaction) => transaction.id !== id)
@@ -144,9 +144,7 @@ export function useTransactions(month?: string) {
       return { previous };
     },
     onError: (_error, _id, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(queryKey, context.previous);
-      }
+      context?.previous?.forEach(([key, value]) => queryClient.setQueryData(key, value));
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: baseQueryKey }),
   });

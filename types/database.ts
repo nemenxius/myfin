@@ -579,6 +579,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_and_materialize_recurring_transaction: { Args: { p_rule: Json; p_through_month: string }; Returns: Database["public"]["Tables"]["recurring_transactions"]["Row"] }
+      delete_recurring_from_occurrence: { Args: { p_effective_date: string; p_recurring_transaction_id: string }; Returns: undefined }
       materialize_recurring_transactions: { Args: { p_month: string }; Returns: Database["public"]["Tables"]["transactions"]["Row"][] }
       purge_demo_user: { Args: never; Returns: undefined }
       purge_stale_demo_users: { Args: never; Returns: undefined }
