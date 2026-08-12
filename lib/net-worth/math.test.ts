@@ -233,4 +233,11 @@ describe("computeCategoryBreakdown", () => {
     const liability = entry("l1", "liability", [value("2026-06-01", 5000)]);
     expect(computeCategoryBreakdown([noValue, liability], catMap)).toEqual([]);
   });
+
+  it("breaks amount ties alphabetically by name", () => {
+    const stock = entry("a1", "asset", [value("2026-06-01", 5000)], "c2");
+    const money = entry("a2", "asset", [value("2026-06-01", 5000)], "c1");
+    const rows = computeCategoryBreakdown([stock, money], catMap);
+    expect(rows.map((r) => r.name)).toEqual(["Money", "Stock Exchange"]);
+  });
 });
