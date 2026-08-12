@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { MailCheck } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 import { supabaseClient } from "@/lib/supabase/client";
 import { setPendingDisplayCurrency } from "@/lib/pending-display-currency";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ export function AuthForm({
   initialError?: string;
 }) {
   const router = useRouter();
+  const { user, signOut } = useAuth();
   const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -49,8 +51,21 @@ export function AuthForm({
     setError(null);
   };
 
+  const leaveDemoIfNeeded = async () => {
+    if (!user?.is_anonymous) return true;
+
+    const { error } = await signOut();
+    if (error) {
+      setError("Couldn't leave the demo right now. Please try again.");
+      return false;
+    }
+
+    return true;
+  };
+
   const handleGoogle = async () => {
     setError(null);
+    if (!(await leaveDemoIfNeeded())) return;
     const { error } = await supabaseClient.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback` },
@@ -61,6 +76,7 @@ export function AuthForm({
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
+    if (!(await leaveDemoIfNeeded())) return;
     setLoading(true);
     const { error } = await supabaseClient.auth.signInWithPassword({
       email,
@@ -77,6 +93,7 @@ export function AuthForm({
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
+    if (!(await leaveDemoIfNeeded())) return;
     if (password.length < 8) {
       setError("Password must be at least 8 characters.");
       return;
