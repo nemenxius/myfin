@@ -45,10 +45,12 @@ export function UserMenu() {
           <Settings />
           Settings
         </DropdownMenuItem>
-        <DropdownMenuItem variant="destructive" onClick={handleSignOut}>
-          <LogOut />
-          Log out
-        </DropdownMenuItem>
+        {!user?.is_anonymous && (
+          <DropdownMenuItem variant="destructive" onClick={handleSignOut}>
+            <LogOut />
+            Log out
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

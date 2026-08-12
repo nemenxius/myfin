@@ -61,7 +61,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     // Surface the sign-out result so callers can distinguish success from
     // failure (e.g. only navigate away when the session is actually gone).
-    return supabaseClient.auth.signOut();
+    return user?.is_anonymous
+      ? supabaseClient.auth.signOut({ scope: "local" })
+      : supabaseClient.auth.signOut();
   }, [user]);
 
   return (

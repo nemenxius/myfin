@@ -35,6 +35,7 @@ export default function SettingsPage() {
   const router = useRouter();
 
   const isGoogleUser = user?.app_metadata?.provider === "google";
+  const isAnonymousUser = user?.is_anonymous === true;
 
   const [currency, setCurrency] = useState(profile?.display_currency ?? "USD");
   const [currencyMsg, setCurrencyMsg] = useState<string | null>(null);
@@ -249,7 +250,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {!isGoogleUser && (
+      {!isAnonymousUser && !isGoogleUser && (
         <Card className="border-border/50 bg-card shadow-sm">
           <CardHeader>
             <CardTitle className="text-base font-medium">Password</CardTitle>
@@ -335,20 +336,22 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card className="border-border/50 bg-card shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-base font-medium">Sign out</CardTitle>
-          <CardDescription>
-            End your session on this device.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button variant="destructive" onClick={handleSignOut}>
-            <LogOut />
-            Log out
-          </Button>
-        </CardContent>
-      </Card>
+      {!isAnonymousUser && (
+        <Card className="border-border/50 bg-card shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-base font-medium">Sign out</CardTitle>
+            <CardDescription>
+              End your session on this device.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="destructive" onClick={handleSignOut}>
+              <LogOut />
+              Log out
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
