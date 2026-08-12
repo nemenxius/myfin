@@ -8,6 +8,7 @@ export interface ValueRowLike {
 export interface NetWorthEntryLike {
   id: string;
   entry_type: string;
+  category_id?: string | null;
   values: ValueRowLike[];
 }
 
@@ -128,4 +129,55 @@ export function monthDelta(
   const percent =
     baselineNet !== 0 ? (amount / Math.abs(baselineNet)) * 100 : null;
   return { amount, percent };
+}
+
+export const UNCATEGORIZED_CATEGORY_ID = "__myfin_uncategorized__";
+
+export interface CategoryInfo {
+  name: string;
+  icon: string;
+}
+
+export interface CategoryBreakdownRow {
+  id: string;
+  name: string;
+  icon: string;
+  amount: number;
+  percent: number;
+}
+
+export function computeCategoryBreakdown(
+  entries: NetWorthEntryLike[],
+  categories: Map<string, CategoryInfo>
+): CategoryBreakdownRow[] {
+  const totals = new Map<string, number>();
+  let totalAssets = 0;
+
+  for (const entry of entries) {
+    if (entry.entry_type !== "asset") continue;
+    const v = entryCurrentValue(entry);
+    if (v === null) continue;
+    totalAssets += v;
+    const id = entry.category_id ?? UNCATEGORIZED_CATEGORY_ID;
+    totals.set(id, (totals.get(id) ?? 0) + v);
+  }
+
+  if (totalAssets === 0) return [];
+
+  const rows: CategoryBreakdownRow[] = [...totals.entries()].map(
+    ([id, amount]) => {
+      const info = categories.get(id);
+      return {
+        id,
+        name: info?.name ?? "Uncategorized",
+        icon: info?.icon ?? "Tag",
+        amount,
+        percent: (amount / totalAssets) * 100,
+      };
+    }
+  );
+
+  return rows.sort(
+    (a, b) => b.amount - a.amount || a.name.localeCompare(b.name)
+  );
 }
