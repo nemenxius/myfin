@@ -62,6 +62,7 @@ export function useTransactions() {
         transaction_type: newTransaction.transaction_type,
         date: newTransaction.date ?? new Date().toISOString(),
         description: newTransaction.description ?? null,
+        recurring_transaction_id: null,
       };
 
       queryClient.setQueryData<Transaction[]>(queryKey, (old) => [

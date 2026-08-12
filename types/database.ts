@@ -376,7 +376,13 @@ export type Database = {
           recurring_transaction_id?: string
           transaction_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          { foreignKeyName: "recurring_transaction_occurrences_override_account_id_fkey"; columns: ["override_account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["id"] },
+          { foreignKeyName: "recurring_transaction_occurrences_override_category_id_fkey"; columns: ["override_category_id"]; isOneToOne: false; referencedRelation: "categories"; referencedColumns: ["id"] },
+          { foreignKeyName: "recurring_transaction_occurrences_override_to_account_id_fkey"; columns: ["override_to_account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["id"] },
+          { foreignKeyName: "recurring_transaction_occurrences_recurring_transaction_id_fkey"; columns: ["recurring_transaction_id"]; isOneToOne: false; referencedRelation: "recurring_transactions"; referencedColumns: ["id"] },
+          { foreignKeyName: "recurring_transaction_occurrences_transaction_id_fkey"; columns: ["transaction_id"]; isOneToOne: false; referencedRelation: "transactions"; referencedColumns: ["id"] },
+        ]
       }
       recurring_transaction_versions: {
         Row: {
@@ -390,6 +396,9 @@ export type Database = {
           recurring_transaction_id: string
           to_account_id: string | null
           transaction_type: string
+          recurrence_kind: string
+          recurrence_unit: string | null
+          recurrence_interval: number | null
         }
         Insert: {
           account_id: string
@@ -402,6 +411,9 @@ export type Database = {
           recurring_transaction_id: string
           to_account_id?: string | null
           transaction_type: string
+          recurrence_kind: string
+          recurrence_unit?: string | null
+          recurrence_interval?: number | null
         }
         Update: {
           account_id?: string
@@ -414,8 +426,16 @@ export type Database = {
           recurring_transaction_id?: string
           to_account_id?: string | null
           transaction_type?: string
+          recurrence_kind?: string
+          recurrence_unit?: string | null
+          recurrence_interval?: number | null
         }
-        Relationships: []
+        Relationships: [
+          { foreignKeyName: "recurring_transaction_versions_account_id_fkey"; columns: ["account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["id"] },
+          { foreignKeyName: "recurring_transaction_versions_category_id_fkey"; columns: ["category_id"]; isOneToOne: false; referencedRelation: "categories"; referencedColumns: ["id"] },
+          { foreignKeyName: "recurring_transaction_versions_recurring_transaction_id_fkey"; columns: ["recurring_transaction_id"]; isOneToOne: false; referencedRelation: "recurring_transactions"; referencedColumns: ["id"] },
+          { foreignKeyName: "recurring_transaction_versions_to_account_id_fkey"; columns: ["to_account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["id"] },
+        ]
       }
       recurring_transactions: {
         Row: {
@@ -472,7 +492,12 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          { foreignKeyName: "recurring_transactions_account_id_fkey"; columns: ["account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["id"] },
+          { foreignKeyName: "recurring_transactions_category_id_fkey"; columns: ["category_id"]; isOneToOne: false; referencedRelation: "categories"; referencedColumns: ["id"] },
+          { foreignKeyName: "recurring_transactions_to_account_id_fkey"; columns: ["to_account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["id"] },
+          { foreignKeyName: "recurring_transactions_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
       }
       transactions: {
         Row: {

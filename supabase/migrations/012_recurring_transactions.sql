@@ -7,7 +7,7 @@ CREATE TABLE public.recurring_transactions (
   account_id UUID NOT NULL REFERENCES public.accounts(id) ON DELETE RESTRICT,
   to_account_id UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
   category_id UUID REFERENCES public.categories(id) ON DELETE SET NULL,
-  amount NUMERIC NOT NULL,
+  amount NUMERIC NOT NULL CHECK (amount <> 0 AND amount <> 'Infinity'::numeric AND amount <> '-Infinity'::numeric),
   transaction_type TEXT NOT NULL CHECK (transaction_type IN ('Income', 'Expense', 'Transfer')),
   description TEXT,
   start_date DATE NOT NULL,
@@ -22,7 +22,8 @@ CREATE TABLE public.recurring_transactions (
   CHECK ((recurrence_kind = 'interval' AND recurrence_unit IS NOT NULL AND recurrence_interval > 0)
       OR (recurrence_kind IN ('never', 'workday') AND recurrence_unit IS NULL AND recurrence_interval IS NULL)),
   CHECK ((transaction_type = 'Transfer' AND to_account_id IS NOT NULL)
-      OR (transaction_type <> 'Transfer' AND to_account_id IS NULL))
+      OR (transaction_type <> 'Transfer' AND to_account_id IS NULL)),
+  CHECK (to_account_id IS NULL OR to_account_id <> account_id)
 );
 
 CREATE TABLE public.recurring_transaction_versions (
@@ -32,13 +33,19 @@ CREATE TABLE public.recurring_transaction_versions (
   account_id UUID NOT NULL REFERENCES public.accounts(id) ON DELETE RESTRICT,
   to_account_id UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
   category_id UUID REFERENCES public.categories(id) ON DELETE SET NULL,
-  amount NUMERIC NOT NULL,
+  amount NUMERIC NOT NULL CHECK (amount <> 0 AND amount <> 'Infinity'::numeric AND amount <> '-Infinity'::numeric),
   transaction_type TEXT NOT NULL CHECK (transaction_type IN ('Income', 'Expense', 'Transfer')),
   description TEXT,
+  recurrence_kind TEXT NOT NULL CHECK (recurrence_kind IN ('never', 'interval', 'workday')),
+  recurrence_unit TEXT CHECK (recurrence_unit IN ('day', 'week', 'month', 'year')),
+  recurrence_interval INTEGER,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (recurring_transaction_id, effective_date),
   CHECK ((transaction_type = 'Transfer' AND to_account_id IS NOT NULL)
-      OR (transaction_type <> 'Transfer' AND to_account_id IS NULL))
+      OR (transaction_type <> 'Transfer' AND to_account_id IS NULL)),
+  CHECK (to_account_id IS NULL OR to_account_id <> account_id),
+  CHECK ((recurrence_kind = 'interval' AND recurrence_unit IS NOT NULL AND recurrence_interval > 0)
+      OR (recurrence_kind IN ('never', 'workday') AND recurrence_unit IS NULL AND recurrence_interval IS NULL))
 );
 
 CREATE TABLE public.recurring_transaction_occurrences (
@@ -50,13 +57,14 @@ CREATE TABLE public.recurring_transaction_occurrences (
   override_account_id UUID REFERENCES public.accounts(id) ON DELETE RESTRICT,
   override_to_account_id UUID REFERENCES public.accounts(id) ON DELETE SET NULL,
   override_category_id UUID REFERENCES public.categories(id) ON DELETE SET NULL,
-  override_amount NUMERIC,
+  override_amount NUMERIC CHECK (override_amount IS NULL OR (override_amount <> 0 AND override_amount <> 'Infinity'::numeric AND override_amount <> '-Infinity'::numeric)),
   override_transaction_type TEXT CHECK (override_transaction_type IN ('Income', 'Expense', 'Transfer')),
   override_description TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (recurring_transaction_id, occurrence_date),
   CHECK ((override_transaction_type = 'Transfer' AND override_to_account_id IS NOT NULL)
-      OR (override_transaction_type IS NULL OR override_transaction_type <> 'Transfer'))
+      OR (override_transaction_type IS NULL OR override_transaction_type <> 'Transfer')),
+  CHECK (override_to_account_id IS NULL OR override_account_id IS NULL OR override_to_account_id <> override_account_id)
 );
 
 ALTER TABLE public.transactions
@@ -145,7 +153,11 @@ DECLARE
   v_rule RECORD;
   v_version RECORD;
   v_date DATE;
-  v_index INTEGER;
+  v_account_id UUID;
+  v_to_account_id UUID;
+  v_category_id UUID;
+  v_amount NUMERIC;
+  v_transaction_type TEXT;
   v_occurrence_id UUID;
   v_transaction public.transactions;
 BEGIN
@@ -155,41 +167,52 @@ BEGIN
   v_month_end := (v_month + INTERVAL '1 month - 1 day')::date;
 
   FOR v_rule IN SELECT * FROM public.recurring_transactions WHERE user_id = v_uid AND is_active FOR UPDATE LOOP
-    v_date := v_rule.start_date;
-    v_index := 0;
+    v_date := GREATEST(v_rule.start_date, v_month);
     WHILE v_date <= v_month_end LOOP
-      IF v_date >= v_month AND (v_rule.end_date IS NULL OR v_date <= v_rule.end_date)
-         AND (v_rule.recurrence_kind = 'never' AND v_index = 0
-           OR v_rule.recurrence_kind = 'workday' AND EXTRACT(ISODOW FROM v_date) < 6
-           OR v_rule.recurrence_kind = 'interval' AND (
-             (v_rule.recurrence_unit = 'day' AND (v_date - v_rule.start_date) % v_rule.recurrence_interval = 0)
-             OR (v_rule.recurrence_unit = 'week' AND (v_date - v_rule.start_date) % (v_rule.recurrence_interval * 7) = 0)
-             OR (v_rule.recurrence_unit = 'month' AND
-               EXTRACT(DAY FROM v_date) = LEAST(EXTRACT(DAY FROM v_rule.start_date), EXTRACT(DAY FROM (date_trunc('month', v_date) + INTERVAL '1 month - 1 day')::date)) AND
-               ((EXTRACT(YEAR FROM v_date)::integer * 12 + EXTRACT(MONTH FROM v_date)::integer) - (EXTRACT(YEAR FROM v_rule.start_date)::integer * 12 + EXTRACT(MONTH FROM v_rule.start_date)::integer)) % v_rule.recurrence_interval = 0)
-             OR (v_rule.recurrence_unit = 'year' AND
-               EXTRACT(MONTH FROM v_date) = EXTRACT(MONTH FROM v_rule.start_date) AND
-               EXTRACT(DAY FROM v_date) = LEAST(EXTRACT(DAY FROM v_rule.start_date), EXTRACT(DAY FROM (date_trunc('month', v_date) + INTERVAL '1 month - 1 day')::date)) AND
-               (EXTRACT(YEAR FROM v_date)::integer - EXTRACT(YEAR FROM v_rule.start_date)::integer) % v_rule.recurrence_interval = 0)
-           )) THEN
-        v_version := NULL;
-        SELECT * INTO v_version FROM public.recurring_transaction_versions
+      SELECT * INTO v_version FROM public.recurring_transaction_versions
         WHERE recurring_transaction_id = v_rule.id AND effective_date <= v_date
         ORDER BY effective_date DESC LIMIT 1;
+      IF v_date <= COALESCE(v_rule.end_date, v_month_end)
+         AND (COALESCE(v_version.recurrence_kind, v_rule.recurrence_kind) = 'never' AND v_date = v_rule.start_date
+           OR COALESCE(v_version.recurrence_kind, v_rule.recurrence_kind) = 'workday' AND EXTRACT(ISODOW FROM v_date) < 6
+           OR COALESCE(v_version.recurrence_kind, v_rule.recurrence_kind) = 'interval' AND (
+             (COALESCE(v_version.recurrence_unit, v_rule.recurrence_unit) = 'day' AND (v_date - v_rule.start_date) % COALESCE(v_version.recurrence_interval, v_rule.recurrence_interval) = 0)
+             OR (COALESCE(v_version.recurrence_unit, v_rule.recurrence_unit) = 'week' AND (v_date - v_rule.start_date) % (COALESCE(v_version.recurrence_interval, v_rule.recurrence_interval) * 7) = 0)
+             OR (COALESCE(v_version.recurrence_unit, v_rule.recurrence_unit) = 'month' AND
+               EXTRACT(DAY FROM v_date) = LEAST(EXTRACT(DAY FROM v_rule.start_date), EXTRACT(DAY FROM (date_trunc('month', v_date) + INTERVAL '1 month - 1 day')::date)) AND
+                ((EXTRACT(YEAR FROM v_date)::integer * 12 + EXTRACT(MONTH FROM v_date)::integer) - (EXTRACT(YEAR FROM v_rule.start_date)::integer * 12 + EXTRACT(MONTH FROM v_rule.start_date)::integer)) % COALESCE(v_version.recurrence_interval, v_rule.recurrence_interval) = 0)
+             OR (COALESCE(v_version.recurrence_unit, v_rule.recurrence_unit) = 'year' AND
+               EXTRACT(MONTH FROM v_date) = EXTRACT(MONTH FROM v_rule.start_date) AND
+               EXTRACT(DAY FROM v_date) = LEAST(EXTRACT(DAY FROM v_rule.start_date), EXTRACT(DAY FROM (date_trunc('month', v_date) + INTERVAL '1 month - 1 day')::date)) AND
+               (EXTRACT(YEAR FROM v_date)::integer - EXTRACT(YEAR FROM v_rule.start_date)::integer) % COALESCE(v_version.recurrence_interval, v_rule.recurrence_interval) = 0)
+           )) THEN
         INSERT INTO public.recurring_transaction_occurrences (recurring_transaction_id, occurrence_date)
         VALUES (v_rule.id, v_date) ON CONFLICT (recurring_transaction_id, occurrence_date) DO NOTHING
         RETURNING id INTO v_occurrence_id;
         IF v_occurrence_id IS NOT NULL THEN
-          SELECT * INTO v_version FROM public.recurring_transaction_versions
-          WHERE recurring_transaction_id = v_rule.id AND effective_date <= v_date
-          ORDER BY effective_date DESC LIMIT 1;
-          INSERT INTO public.transactions (user_id, account_id, to_account_id, category_id, amount, transaction_type, date, description, recurring_transaction_id)
-          SELECT v_uid,
-            COALESCE(o.override_account_id, v_version.account_id, v_rule.account_id),
+          SELECT COALESCE(o.override_account_id, v_version.account_id, v_rule.account_id),
             COALESCE(o.override_to_account_id, v_version.to_account_id, v_rule.to_account_id),
             COALESCE(o.override_category_id, v_version.category_id, v_rule.category_id),
             COALESCE(o.override_amount, v_version.amount, v_rule.amount),
-            COALESCE(o.override_transaction_type, v_version.transaction_type, v_rule.transaction_type),
+            COALESCE(o.override_transaction_type, v_version.transaction_type, v_rule.transaction_type)
+          INTO v_account_id, v_to_account_id, v_category_id, v_amount, v_transaction_type
+          FROM public.recurring_transaction_occurrences o WHERE o.id = v_occurrence_id;
+          -- SECURITY DEFINER must re-check resolved account/category ownership.
+          IF NOT EXISTS (SELECT 1 FROM public.accounts WHERE id = v_account_id AND user_id = v_uid)
+             OR (v_to_account_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.accounts WHERE id = v_to_account_id AND user_id = v_uid))
+             OR (v_category_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.categories WHERE id = v_category_id AND (user_id IS NULL OR user_id = v_uid)))
+             OR NOT EXISTS (SELECT 1 FROM public.recurring_transactions WHERE id = v_rule.id AND user_id = v_uid)
+             OR v_amount = 0 OR v_amount IN ('Infinity'::numeric, '-Infinity'::numeric)
+             OR (v_to_account_id IS NOT NULL AND v_to_account_id = v_account_id) THEN
+            RAISE EXCEPTION 'Invalid resolved account/category ownership or values';
+          END IF;
+          INSERT INTO public.transactions (user_id, account_id, to_account_id, category_id, amount, transaction_type, date, description, recurring_transaction_id)
+          SELECT v_uid,
+            v_account_id,
+            v_to_account_id,
+            v_category_id,
+            v_amount,
+            v_transaction_type,
             v_date::timestamptz,
             COALESCE(o.override_description, v_version.description, v_rule.description), v_rule.id
           FROM public.recurring_transaction_occurrences o WHERE o.id = v_occurrence_id
@@ -198,7 +221,6 @@ BEGIN
           RETURN NEXT v_transaction;
         END IF;
       END IF;
-      v_index := v_index + 1;
       v_date := v_date + 1;
     END LOOP;
   END LOOP;
