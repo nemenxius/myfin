@@ -81,8 +81,9 @@ export function NetWorthOverview() {
         </div>
       ) : (
         <>
-          <NetWorthSummary />
-          <NetWorthCategoryBreakdown />
+          <NetWorthSummary>
+            <NetWorthCategoryBreakdown />
+          </NetWorthSummary>
           <NetWorthChart />
           <EntryList
             entryType="asset"

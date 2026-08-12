@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useNetWorth } from "@/hooks/use-net-worth";
@@ -7,32 +8,35 @@ import { usePrimaryCurrency } from "@/hooks/use-primary-currency";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-export function NetWorthSummary() {
+export function NetWorthSummary({ children }: { children?: ReactNode }) {
   const { totals, netWorth, monthDelta, assets, liabilities, isLoading } =
     useNetWorth();
   const { currency } = usePrimaryCurrency();
 
   return (
     <div className="space-y-4">
-      <Card className="border-border/50 bg-card p-5 shadow-sm">
-        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-fog">
-          Net Worth
-        </p>
-        <p className="mt-2 font-mono text-4xl font-medium tracking-tight text-foreground tabular-nums">
-          {isLoading ? "—" : formatCurrency(netWorth, currency)}
-        </p>
-        {monthDelta ? (
-          <p
-            className={cn(
-              "mt-2 text-sm",
-              monthDelta.amount >= 0 ? "text-leaf" : "text-ember"
-            )}
-          >
-            {monthDelta.amount >= 0 ? "+" : ""}
-            {formatCurrency(monthDelta.amount, currency)} this month
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card className="border-border/50 bg-card p-5 shadow-sm">
+          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-fog">
+            Net Worth
           </p>
-        ) : null}
-      </Card>
+          <p className="mt-2 font-mono text-4xl font-medium tracking-tight text-foreground tabular-nums">
+            {isLoading ? "—" : formatCurrency(netWorth, currency)}
+          </p>
+          {monthDelta ? (
+            <p
+              className={cn(
+                "mt-2 text-sm",
+                monthDelta.amount >= 0 ? "text-leaf" : "text-ember"
+              )}
+            >
+              {monthDelta.amount >= 0 ? "+" : ""}
+              {formatCurrency(monthDelta.amount, currency)} this month
+            </p>
+          ) : null}
+        </Card>
+        {children}
+      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Card className="border-border/50 bg-card p-5 shadow-sm">
