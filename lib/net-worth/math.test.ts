@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   buildNetWorthSeries,
   collectValueDates,
+  computeCategoryBreakdown,
   computeNetWorth,
   computeTotals,
   entryCurrentValue,
   monthDelta,
+  UNCATEGORIZED_CATEGORY_ID,
   valueAsOf,
   type NetWorthEntryLike,
   type ValueRowLike,
@@ -16,8 +18,9 @@ const value = (as_of: string, value: number): ValueRowLike => ({ as_of, value })
 const entry = (
   id: string,
   entry_type: "asset" | "liability",
-  values: ValueRowLike[]
-): NetWorthEntryLike => ({ id, entry_type, values });
+  values: ValueRowLike[],
+  category_id?: string | null
+): NetWorthEntryLike => ({ id, entry_type, values, category_id });
 
 describe("entryCurrentValue", () => {
   it("returns null when the entry has no value rows", () => {
@@ -170,5 +173,64 @@ describe("monthDelta", () => {
       value("2026-08-01", 500),
     ]);
     expect(monthDelta([bank], now)).toEqual({ amount: 500, percent: null });
+  });
+});
+
+describe("computeCategoryBreakdown", () => {
+  const catMap = new Map<string, { name: string; icon: string }>([
+    ["c1", { name: "Money", icon: "Banknote" }],
+    ["c2", { name: "Stock Exchange", icon: "CandlestickChart" }],
+  ]);
+
+  it("returns an empty array for no entries", () => {
+    expect(computeCategoryBreakdown([], catMap)).toEqual([]);
+  });
+
+  it("groups assets by category and computes percentages", () => {
+    const money = entry("a1", "asset", [value("2026-06-01", 30000)], "c1");
+    const stock = entry("a2", "asset", [value("2026-06-01", 10000)], "c2");
+    const rows = computeCategoryBreakdown([money, stock], catMap);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({
+      id: "c1",
+      name: "Money",
+      icon: "Banknote",
+      amount: 30000,
+    });
+    expect(rows[0].percent).toBeCloseTo(75, 5);
+    expect(rows[1]).toMatchObject({
+      id: "c2",
+      name: "Stock Exchange",
+      icon: "CandlestickChart",
+      amount: 10000,
+    });
+    expect(rows[1].percent).toBeCloseTo(25, 5);
+  });
+
+  it("buckets uncategorized assets", () => {
+    const uncat = entry("a1", "asset", [value("2026-06-01", 5000)]);
+    const rows = computeCategoryBreakdown([uncat], catMap);
+    expect(rows).toEqual([
+      {
+        id: UNCATEGORIZED_CATEGORY_ID,
+        name: "Uncategorized",
+        icon: "Tag",
+        amount: 5000,
+        percent: 100,
+      },
+    ]);
+  });
+
+  it("sorts by amount descending", () => {
+    const small = entry("a1", "asset", [value("2026-06-01", 1000)], "c1");
+    const big = entry("a2", "asset", [value("2026-06-01", 9000)], "c2");
+    const rows = computeCategoryBreakdown([small, big], catMap);
+    expect(rows.map((r) => r.amount)).toEqual([9000, 1000]);
+  });
+
+  it("skips entries without values and liabilities", () => {
+    const noValue = entry("a1", "asset", []);
+    const liability = entry("l1", "liability", [value("2026-06-01", 5000)]);
+    expect(computeCategoryBreakdown([noValue, liability], catMap)).toEqual([]);
   });
 });
