@@ -1,4 +1,5 @@
 export async function demoLocalLogoutFetch(
+  supabaseUrl: string,
   input: RequestInfo | URL,
   init?: RequestInit,
 ): Promise<Response> {
@@ -9,8 +10,13 @@ export async function demoLocalLogoutFetch(
     return globalThis.fetch(input, init);
   }
 
+  const method = init?.method ?? (input instanceof Request ? input.method : undefined);
+
   if (
+    requestUrl.origin === new URL(supabaseUrl).origin &&
     requestUrl.pathname === "/auth/v1/logout" &&
+    method === "POST" &&
+    requestUrl.searchParams.size === 1 &&
     requestUrl.searchParams.getAll("scope").length === 1 &&
     requestUrl.searchParams.get("scope") === "local"
   ) {
