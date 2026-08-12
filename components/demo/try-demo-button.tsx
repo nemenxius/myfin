@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabaseClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -61,7 +62,22 @@ export function TryDemoButton({
     router.push("/dashboard");
   };
 
-  if (user || isLoading) return null;
+  if (isLoading) return null;
+
+  if (user?.is_anonymous) {
+    return (
+      <Button
+        render={<Link href="/dashboard" />}
+        nativeButton={false}
+        variant={variant}
+        className={className}
+      >
+        Continue demo
+      </Button>
+    );
+  }
+
+  if (user) return null;
 
   return (
     <div className="flex flex-col gap-1">
