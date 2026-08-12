@@ -70,6 +70,7 @@ function candidateAt(rule: RecurrenceRule, index: number): Date {
 function occurrenceAt(rule: RecurrenceRule, index: number): Date {
   if (rule.recurrence.kind !== "workday") return candidateAt(rule, index);
   let date = parseDate(rule.startDate);
+  while (getDay(date) === 0 || getDay(date) === 6) date = addDays(date, 1);
   let remaining = index;
   while (remaining > 0) {
     date = addDays(date, 1);
@@ -84,7 +85,8 @@ function indexAfter(rule: RecurrenceRule, date: Date): number {
   if (rule.recurrence.kind === "never") return 1;
   if (rule.recurrence.kind === "workday") {
     let index = 0;
-    let candidate = start;
+    let candidate = occurrenceAt(rule, index);
+    if (isBefore(date, candidate)) return 0;
     while (!isAfter(candidate, date)) {
       index += 1;
       candidate = occurrenceAt(rule, index);
@@ -107,7 +109,13 @@ function withinEnd(rule: RecurrenceRule, date: Date): boolean {
 
 export function isOccurrenceDate(rule: RecurrenceRule, date: string): boolean {
   if (validateRecurrenceRule(rule).length || !validDate(date)) return false;
+  if (rule.recurrence.kind === "never") return date === rule.startDate;
   const target = parseDate(date);
+  if (rule.recurrence.kind === "workday") {
+    const first = occurrenceAt(rule, 0);
+    if (isBefore(target, first)) return false;
+    return isEqual(occurrenceAt(rule, indexAfter(rule, target) - 1), target) && withinEnd(rule, target);
+  }
   const index = indexAfter(rule, target);
   const candidate = occurrenceAt(rule, index);
   return isEqual(candidate, target) && withinEnd(rule, target);
@@ -115,6 +123,7 @@ export function isOccurrenceDate(rule: RecurrenceRule, date: string): boolean {
 
 export function nextOccurrence(rule: RecurrenceRule, afterDate: string): string | null {
   if (validateRecurrenceRule(rule).length || !validDate(afterDate)) return null;
+  if (rule.recurrence.kind === "never") return null;
   const after = parseDate(afterDate);
   let index = indexAfter(rule, after);
   let candidate = occurrenceAt(rule, index);

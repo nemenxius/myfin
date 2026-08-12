@@ -37,6 +37,9 @@ describe("validateRecurrenceRule", () => {
 describe("recurrence calculations", () => {
   it("calculates never, daily, and every-other-day schedules", () => {
     expect(occurrencesInMonth(rule({ kind: "never", unit: null, interval: null }, "2026-01-10"), "2026-01")).toEqual(["2026-01-10"]);
+    const never = rule({ kind: "never", unit: null, interval: null }, "2026-01-10");
+    expect(nextOccurrence(never, "2026-01-10")).toBe(null);
+    expect(isOccurrenceDate(never, "2026-01-11")).toBe(false);
     expect(occurrencesInMonth(rule({ kind: "interval", unit: "day", interval: 2 }), "2026-01")).toEqual([
       "2026-01-01", "2026-01-03", "2026-01-05", "2026-01-07", "2026-01-09", "2026-01-11", "2026-01-13", "2026-01-15", "2026-01-17", "2026-01-19", "2026-01-21", "2026-01-23", "2026-01-25", "2026-01-27", "2026-01-29", "2026-01-31",
     ]);
@@ -45,6 +48,17 @@ describe("recurrence calculations", () => {
   it("skips weekends for workdays and resumes on Monday", () => {
     const workdays = rule({ kind: "workday", unit: null, interval: null }, "2026-01-09");
     expect(occurrencesInMonth(workdays, "2026-01")).toEqual(["2026-01-09", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-19", "2026-01-20", "2026-01-21", "2026-01-22", "2026-01-23", "2026-01-26", "2026-01-27", "2026-01-28", "2026-01-29", "2026-01-30"]);
+  });
+
+  it("normalizes a weekend workday start to the following Monday", () => {
+    const workdays = rule({ kind: "workday", unit: null, interval: null }, "2026-01-10");
+    expect(occurrencesInMonth(workdays, "2026-01")).toEqual([
+      "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16",
+      "2026-01-19", "2026-01-20", "2026-01-21", "2026-01-22", "2026-01-23",
+      "2026-01-26", "2026-01-27", "2026-01-28", "2026-01-29", "2026-01-30",
+    ]);
+    expect(nextOccurrence(workdays, "2026-01-10")).toBe("2026-01-12");
+    expect(isOccurrenceDate(workdays, "2026-01-12")).toBe(true);
   });
 
   it("supports weekly intervals", () => {
