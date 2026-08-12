@@ -63,8 +63,11 @@ New `components/net-worth/net-worth-category-breakdown.tsx`:
 
 ## Placement
 
-In `components/net-worth/net-worth-overview.tsx`, render the new card between
-`<NetWorthSummary />` and `<NetWorthChart />`.
+In `components/net-worth/net-worth-overview.tsx`, the card renders in the same
+row as the Net Worth summary card: `NetWorthSummary` accepts a `children` slot
+and renders it beside the Net Worth card in a `lg:grid-cols-2` grid (stacks on
+smaller screens). The Assets/Liabilities cards remain below, then the Net Worth
+Evolution chart.
 
 ## Tests
 
