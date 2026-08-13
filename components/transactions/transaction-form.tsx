@@ -477,9 +477,15 @@ export function TransactionForm({
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   aria-invalid={!!errors.date}
+                  disabled={isRecurringEdit}
                 />
                 {errors.date && (
                   <p className="text-xs text-destructive">{errors.date}</p>
+                )}
+                {isRecurringEdit && (
+                  <p className="text-xs text-fog">
+                    Date is fixed for recurring transactions.
+                  </p>
                 )}
               </div>
 
