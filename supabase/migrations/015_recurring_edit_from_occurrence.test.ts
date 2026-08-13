@@ -48,6 +48,23 @@ describe("recurring edit-from-occurrence RPC migration contract", () => {
     expect(migration).toMatch(/INSERT INTO public\.recurring_transaction_versions \([\s\S]*effective_date[\s\S]*\) VALUES \([\s\S]*p_effective_date/);
   });
 
+  it("upserts the version on conflict so re-editing the same effective date overwrites template fields instead of raising", () => {
+    expect(migration).toMatch(/ON CONFLICT \(recurring_transaction_id, effective_date\) DO UPDATE SET/);
+    expect(migration).toMatch(/account_id = EXCLUDED\.account_id/);
+    expect(migration).toMatch(/to_account_id = EXCLUDED\.to_account_id/);
+    expect(migration).toMatch(/category_id = EXCLUDED\.category_id/);
+    expect(migration).toMatch(/amount = EXCLUDED\.amount/);
+    expect(migration).toMatch(/transaction_type = EXCLUDED\.transaction_type/);
+    expect(migration).toMatch(/description = EXCLUDED\.description/);
+    expect(migration).toMatch(/recurrence_kind = EXCLUDED\.recurrence_kind/);
+    expect(migration).toMatch(/recurrence_unit = EXCLUDED\.recurrence_unit/);
+    expect(migration).toMatch(/recurrence_interval = EXCLUDED\.recurrence_interval/);
+  });
+
+  it("runs the reconcile block after the version upsert for both fresh and conflict paths", () => {
+    expect(migration).toMatch(/ON CONFLICT \(recurring_transaction_id, effective_date\) DO UPDATE SET[\s\S]*v_span_end := GREATEST\(/);
+  });
+
   it("bounds the reconciliation span to current month end, max occurrence, and rule end date", () => {
     expect(migration).toMatch(/GREATEST\([\s\S]*date_trunc\('month', CURRENT_DATE\) \+\s*INTERVAL '1 month - 1 day'[\s\S]*MAX\(occurrence_date\)/);
     expect(migration).toMatch(/IF v_rule\.end_date IS NOT NULL THEN v_span_end := LEAST\(v_span_end, v_rule\.end_date\)/);

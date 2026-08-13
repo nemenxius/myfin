@@ -90,13 +90,28 @@ BEGIN
     RAISE EXCEPTION 'Invalid account/category ownership';
   END IF;
 
+  -- Upsert on (recurring_transaction_id, effective_date): re-editing an
+  -- occurrence that already has a version on the same date (e.g. applying a
+  -- "this and future"/"entire series" edit to the same occurrence twice) must
+  -- overwrite that version's template fields instead of violating the unique
+  -- constraint. created_at is left untouched (original version creation time).
   INSERT INTO public.recurring_transaction_versions (
     recurring_transaction_id, effective_date, account_id, to_account_id, category_id,
     amount, transaction_type, description, recurrence_kind, recurrence_unit, recurrence_interval
   ) VALUES (
     p_recurring_transaction_id, p_effective_date, v_account_id, v_to_account_id, v_category_id,
     v_amount, v_transaction_type, v_description, v_recurrence_kind, v_recurrence_unit, v_recurrence_interval
-  );
+  )
+  ON CONFLICT (recurring_transaction_id, effective_date) DO UPDATE SET
+    account_id = EXCLUDED.account_id,
+    to_account_id = EXCLUDED.to_account_id,
+    category_id = EXCLUDED.category_id,
+    amount = EXCLUDED.amount,
+    transaction_type = EXCLUDED.transaction_type,
+    description = EXCLUDED.description,
+    recurrence_kind = EXCLUDED.recurrence_kind,
+    recurrence_unit = EXCLUDED.recurrence_unit,
+    recurrence_interval = EXCLUDED.recurrence_interval;
 
   -- Reconcile the span from the effective date through the later of the current
   -- month end or the latest existing occurrence, never past the rule end date.

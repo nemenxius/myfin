@@ -16,6 +16,14 @@ DECLARE
 BEGIN
   IF v_uid IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
 
+  -- Defense-in-depth: the UI only ever passes the current month. Reject
+  -- malformed months or anything beyond next month so a buggy client cannot
+  -- trigger an unbounded backfill.
+  IF p_through_month !~ '^\d{4}-(0[1-9]|1[0-2])$'
+     OR p_through_month > to_char(now() + interval '1 month', 'YYYY-MM') THEN
+    RAISE EXCEPTION 'Invalid month';
+  END IF;
+
   -- Parse the complete rule payload (same keys the client hook sends).
   v_account_id := (p_rule->>'account_id')::uuid;
   v_to_account_id := NULLIF(p_rule->>'to_account_id', '')::uuid;

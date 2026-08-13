@@ -49,6 +49,12 @@ describe("recurring transaction mutation RPC migration contract", () => {
     expect(migration).toMatch(/PERFORM public\.materialize_recurring_transactions\(to_char\(m, 'YYYY-MM'\)\) FROM generate_series\(date_trunc\('month', v_rule\.start_date\)::date/);
   });
 
+  it("bounds p_through_month to the current month plus one", () => {
+    expect(migration).toMatch(/p_through_month !~ '\^\\d\{4\}-\(0\[1-9\]\|1\[0-2\]\)\$'/);
+    expect(migration).toMatch(/p_through_month > to_char\(now\(\) \+ interval '1 month', 'YYYY-MM'\)/);
+    expect(migration).toMatch(/RAISE EXCEPTION 'Invalid month'/);
+  });
+
   it("preserves the scoped future-deletion RPC", () => {
     expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.delete_recurring_from_occurrence\(p_recurring_transaction_id UUID, p_effective_date DATE\)[\s\S]*SECURITY DEFINER SET search_path = ''/);
     expect(migration).toMatch(/IF p_effective_date <= v_start THEN DELETE FROM public\.recurring_transactions[\s\S]*ELSE UPDATE public\.recurring_transactions SET end_date = p_effective_date - 1/);

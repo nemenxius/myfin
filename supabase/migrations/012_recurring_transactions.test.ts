@@ -40,6 +40,14 @@ describe("recurring transaction migration contract", () => {
     expect(migration).toMatch(/recurrence_unit = 'year' AND recurrence_interval = 1/);
   });
 
+  it("fails closed on NULL cadence fields at the table level", () => {
+    // A NULL interval/unit in an interval rule previously short-circuited the
+    // CHECK to pass (NULL <> FALSE); the cadence CHECKs on the rule and version
+    // tables must reject structurally broken cadence rows via an IS TRUE guard.
+    expect(migration.match(/CHECK \(\(\(recurrence_kind = 'interval'/g)?.length).toBe(2);
+    expect(migration.match(/recurrence_interval IS NULL\)\) IS TRUE/g)?.length).toBe(2);
+  });
+
   it("validates occurrence transaction ownership and rule matching in RLS and RPC", () => {
     expect(migration).toMatch(/transaction_id IS NULL OR EXISTS \(SELECT 1 FROM public\.transactions t WHERE t\.id = transaction_id AND t\.user_id = auth\.uid\(\) AND t\.recurring_transaction_id = recurring_transaction_id\)/g);
     expect(migration).toMatch(/transaction_id = v_transaction\.id/);

@@ -19,12 +19,12 @@ CREATE TABLE public.recurring_transactions (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   CHECK (end_date IS NULL OR end_date >= start_date),
-  CHECK ((recurrence_kind = 'interval' AND (
+  CHECK (((recurrence_kind = 'interval' AND (
         (recurrence_unit = 'day' AND recurrence_interval IN (1, 2))
         OR (recurrence_unit = 'week' AND recurrence_interval IN (1, 2, 3, 4))
         OR (recurrence_unit = 'month' AND recurrence_interval IN (1, 2, 3, 6))
         OR (recurrence_unit = 'year' AND recurrence_interval = 1)))
-      OR (recurrence_kind IN ('never', 'workday') AND recurrence_unit IS NULL AND recurrence_interval IS NULL)),
+      OR (recurrence_kind IN ('never', 'workday') AND recurrence_unit IS NULL AND recurrence_interval IS NULL)) IS TRUE),
   CHECK ((transaction_type = 'Transfer' AND to_account_id IS NOT NULL)
       OR (transaction_type <> 'Transfer' AND to_account_id IS NULL)),
   CHECK (to_account_id IS NULL OR to_account_id <> account_id)
@@ -48,12 +48,12 @@ CREATE TABLE public.recurring_transaction_versions (
   CHECK ((transaction_type = 'Transfer' AND to_account_id IS NOT NULL)
       OR (transaction_type <> 'Transfer' AND to_account_id IS NULL)),
   CHECK (to_account_id IS NULL OR to_account_id <> account_id),
-  CHECK ((recurrence_kind = 'interval' AND (
+  CHECK (((recurrence_kind = 'interval' AND (
         (recurrence_unit = 'day' AND recurrence_interval IN (1, 2))
         OR (recurrence_unit = 'week' AND recurrence_interval IN (1, 2, 3, 4))
         OR (recurrence_unit = 'month' AND recurrence_interval IN (1, 2, 3, 6))
         OR (recurrence_unit = 'year' AND recurrence_interval = 1)))
-      OR (recurrence_kind IN ('never', 'workday') AND recurrence_unit IS NULL AND recurrence_interval IS NULL))
+      OR (recurrence_kind IN ('never', 'workday') AND recurrence_unit IS NULL AND recurrence_interval IS NULL)) IS TRUE)
 );
 
 CREATE TABLE public.recurring_transaction_occurrences (
