@@ -562,7 +562,12 @@ export function TransactionForm({
                     }}
                   >
                     <SelectTrigger id="recurrence" className="w-full">
-                      <SelectValue placeholder="Select recurrence" />
+                      <SelectValue placeholder="Select recurrence">
+                        {(value) =>
+                          RECURRENCE_OPTIONS.find((o) => o.key === value)?.label ??
+                          "Select recurrence"
+                        }
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {RECURRENCE_OPTIONS.map((option) => (
