@@ -12,6 +12,7 @@ const tx = (id: string, date: string, amount: number) => ({
   description: null,
   transaction_type: "expense",
   created_at: date,
+  recurring_transaction_id: null,
 });
 
 describe("buildLedger", () => {

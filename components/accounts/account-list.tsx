@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { format } from "date-fns";
 import { Landmark, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,8 +51,9 @@ interface AccountWithBalance extends Account {
 }
 
 export function AccountList() {
+  const currentMonth = format(new Date(), "yyyy-MM");
   const { data: accounts, isLoading, deleteAccount } = useAccounts();
-  const { data: transactions } = useTransactions();
+  const { data: transactions } = useTransactions(currentMonth);
   const { currency } = usePrimaryCurrency();
 
   const [formOpen, setFormOpen] = useState(false);

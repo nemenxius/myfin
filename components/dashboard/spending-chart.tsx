@@ -41,7 +41,7 @@ function CustomTooltip({
 }
 
 export function SpendingChart({ month }: { month: string }) {
-  const { data: transactions, isLoading } = useTransactions();
+  const { data: transactions, isLoading } = useTransactions(month);
   const { currency } = usePrimaryCurrency();
 
   const data = useMemo(() => {

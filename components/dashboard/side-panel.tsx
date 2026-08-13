@@ -21,7 +21,7 @@ const DONUT_COLORS = [
 const UNCATEGORIZED_CATEGORY_ID = "__myfin_uncategorized__";
 
 export function SidePanel({ month }: { month: string }) {
-  const { data: transactions, isLoading } = useTransactions();
+  const { data: transactions, isLoading } = useTransactions(month);
   const { data: categories } = useCategories();
   const { currency } = usePrimaryCurrency();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);

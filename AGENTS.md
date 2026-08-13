@@ -52,6 +52,7 @@ hooks/
   use-accounts.ts           # Account CRUD
   use-categories.ts         # Category CRUD
   use-transactions.ts       # Transaction CRUD
+  use-recurring-transactions.ts # Recurring rule CRUD, materialization, scoped edit/delete
   use-portfolio.ts          # Portfolio holdings/transactions CRUD + computed metrics
   use-net-worth.ts          # Net worth entries + value-row CRUD
   use-net-worth-categories.ts   # Net worth asset category CRUD
@@ -62,6 +63,7 @@ lib/
   month.ts                  # Month parsing/window/labels
   date.ts                   # Date input <-> local-midnight ISO helpers
   ledger.ts                 # Pure ledger/running-balance helper
+  recurring-transactions/   # Pure recurrence engine, rule/version/occurrence types + tests
   pending-display-currency.ts # localStorage helpers for signup currency
   market-data/              # Yahoo/AlphaVantage/CoinGecko providers + TTL cache
   net-worth/                # Pure net worth value-history helpers + tests
@@ -163,6 +165,39 @@ Migration state to preserve:
   + hourly `pg_cron` sweep (`purge-stale-demo-users`). No table changes.
   Requires anonymous sign-ins enabled in the dashboard and the `pg_cron`
   extension. Run remotely via dashboard SQL editor.
+- `012_recurring_transactions.sql`: `recurring_transactions` (rule template +
+  nullable inclusive `end_date` + structural `recurrence_kind/unit/interval`),
+  `recurring_transaction_versions` (effective-dated templates; no `end_date` —
+  end dates are rule-level only), `recurring_transaction_occurrences`
+  (durable per-rule/date row with `status` pending/skipped/materialized and
+  `override_*` columns; unique `(recurring_transaction_id, occurrence_date)` is
+  the idempotency boundary). Adds `transactions.recurring_transaction_id`
+  (nullable, FK ON DELETE SET NULL), materialization RPC
+  (`materialize_recurring_transactions(p_month)` SECURITY DEFINER; selects the
+  latest version effective on each date, honors rule end date, resolves
+  overrides, re-checks ownership, creates transactions only for pending
+  occurrences), and RLS referencing the owning rule.
+- `013_transaction_recurring_rls.sql`: replaces the broad `transactions`
+  INSERT/UPDATE policies with ones that require account/category ownership AND
+  keep `recurring_transaction_id` referencing an own rule (prevents attaching
+  rows to another user's rule / bypassing the SECURITY DEFINER checks).
+- `014_recurring_transaction_mutations.sql`: `create_and_materialize_recurring_transaction`
+  (inserts rule + backfills all occurrences through the current month) and
+  `delete_recurring_from_occurrence` (soft-stops: sets rule `end_date` to
+  effective date − 1, keeps earlier rows) SECURITY DEFINER functions.
+- `015_recurring_edit_from_occurrence.sql`: SECURITY DEFINER
+  `apply_recurring_edit_from_occurrence(p_recurring_transaction_id UUID,
+  p_effective_date DATE, p_version JSONB)` — "this and future"/series edit RPC
+  that validates the complete version payload (amount, type, transfer
+  destination, recurrence CHECKs identical to 012, resolved account/category
+  ownership), inserts the effective-dated version, then reconciles the span
+  from the effective date through the later of the current month end or the
+  latest existing occurrence (never past the inclusive rule `end_date`):
+  candidates update already-materialized transactions to the version template
+  and clear their occurrence overrides, non-candidates delete the transaction
+  and mark the occurrence `skipped` (durable no-reappear guarantee), pending
+  rows and row-less candidate dates are left for lazy materialization. Must be
+  applied remotely via the Supabase dashboard SQL editor.
 
 After schema changes, regenerate types with:
 
@@ -176,6 +211,7 @@ supabase gen types typescript --project-id <PROJECT_ID> --schema public > types/
 - Dashboard supports `?month=YYYY-MM`; month-aware cards and ledger use `lib/month.ts`, `lib/date.ts`, and `lib/ledger.ts`.
 - Accounts CRUD lives under `/dashboard/accounts`.
 - Transactions support create/edit/delete with optimistic updates and month-default dates. New transactions prefill account/category from `profiles.default_account_id` / `default_category_id` (optional; both unset means no default).
+- Recurring transactions: creating a transaction with a recurrence (daily 1/2, workdays Mon-Fri, weekly 1-4, monthly 1/2/3/6, yearly) stores a rule and backfills occurrences through the current month; future months materialize lazily when requested (the month-scoped `useTransactions` calls `materialize_recurring_transactions`). Rule edits create effective-dated versions (never rewrite history); the transaction list offers scoped edit/delete (occurrence only / this-and-future / entire series) with soft cancellation. End dates are inclusive, rule-level only (set at creation), and stop materialization without deleting generated rows.
 - Settings (`/dashboard/settings`) includes a Defaults card to set/unset the default account and default category.
 - Categories are managed in `/dashboard/settings`: global categories are read-only; users can create/edit/delete custom categories with a Lucide icon picker.
 - Category icons render in the dashboard side-panel by-category list and in the transaction form dropdown.
@@ -231,6 +267,12 @@ supabase gen types typescript --project-id <PROJECT_ID> --schema public > types/
   were superseded. Regenerate whenever the remote schema changes.
 - Tighten transaction insert/update RLS so `category_id` must be global or owned by the same user. Same ownership gap exists on `holding_transactions`: its foreign-ownership EXISTS policy is OR-combined with the `auth.uid()` ALL policy, so a user could insert a transaction referencing another user's `holding_id`. Migration 007 is not yet applied remotely, so an in-file fix is cheap before applying.
 - Net worth entries UPDATE RLS (010) now checks `auth.uid() = user_id` in `WITH CHECK`; the pre-existing transaction/holding foreign-ownership gaps above remain open.
+- Recurring transactions: end dates are rule-level and can only be set at creation (versions cannot carry them). Consider a follow-up to let users end/edit a rule's end date from the list or a future recurring-management page. Also: `types/database.ts` must be regenerated with the Supabase CLI after migrations 012/013/014/015 are applied remotely (the `apply_recurring_edit_from_occurrence` Functions entry was hand-added, consistent with prior hand-edit work).
+- Recurring transactions timezone risk (QA-flagged, unverified without a live backend): the materialization RPCs insert `v_date::timestamptz` (DB-session midnight, typically UTC), while app-created transactions store client-local midnight via `dateInputToISO`. For users west of UTC, materialized rows can land on the previous local day/month in the ledger. A proper fix passes the client's UTC offset into the materialize/create/reconcile RPCs; requires live verification.
+- Recurring transactions cadence re-anchor (QA-flagged, design tension): a cadence-preserving "this and future" edit re-anchors cadence math at the version's effective date, so a Jan-31 monthly rule edited from its Feb-28 occurrence drifts to Mar 28, Apr 28… (violates the engine's "preserve original day intent"). Re-anchoring is correct when the cadence actually changes; the materializer/015 RPC would need to compare against the previous version's cadence and keep the prior anchor when unchanged.
+- Recurring transactions occurrence edit/delete are non-atomic (two client calls: transaction write + occurrence bookkeeping). A partial failure leaves the occurrence stale. Consider folding into a single SECURITY DEFINER RPC (like 015) in a follow-up.
+- Recurring transactions form error extraction (final-review flagged, repo-wide): `err instanceof Error ? err.message : ...` renders the generic fallback for all Supabase client errors, because the JS client's non-throwing path returns plain parsed objects, not `Error`/`PostgrestError` instances. RPC messages like "Recurring transaction not found" don't surface. Extract a shared `lib/errors.ts` message helper reading `message` from any object and use it across the 10+ dialog forms.
+- Recurring transactions scope dialog (final-review flagged): until the rules/versions queries resolve (or if they error), "This and future"/"Entire series" EDIT options are disabled with no explanation (occurrence-only edits and deletes stay available). Fail-closed by design; a short "loading rules…" hint would clarify.
 - Add UI feedback for failed category/account delete mutations instead of silent optimistic rollback. Same class applies to portfolio holding/transaction deletes.
 - Consider typing category/account update inputs to exclude `user_id`. Same applies to `updateHoldingTransaction` (caller-supplied updates are not stripped of `user_id`/`holding_id`/`created_at`; only safe fields are sent by the current form).
 - Consider a small icon-map drift test for `CATEGORY_ICONS` vs the internal icon map.

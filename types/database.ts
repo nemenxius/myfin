@@ -333,6 +333,172 @@ export type Database = {
           },
         ]
       }
+      recurring_transaction_occurrences: {
+        Row: {
+          created_at: string
+          id: string
+          occurrence_date: string
+          status: string
+          override_account_id: string | null
+          override_amount: number | null
+          override_category_id: string | null
+          override_description: string | null
+          override_to_account_id: string | null
+          override_transaction_type: string | null
+          recurring_transaction_id: string
+          transaction_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          occurrence_date: string
+          status?: string
+          override_account_id?: string | null
+          override_amount?: number | null
+          override_category_id?: string | null
+          override_description?: string | null
+          override_to_account_id?: string | null
+          override_transaction_type?: string | null
+          recurring_transaction_id: string
+          transaction_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          occurrence_date?: string
+          status?: string
+          override_account_id?: string | null
+          override_amount?: number | null
+          override_category_id?: string | null
+          override_description?: string | null
+          override_to_account_id?: string | null
+          override_transaction_type?: string | null
+          recurring_transaction_id?: string
+          transaction_id?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "recurring_transaction_occurrences_override_account_id_fkey"; columns: ["override_account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["id"] },
+          { foreignKeyName: "recurring_transaction_occurrences_override_category_id_fkey"; columns: ["override_category_id"]; isOneToOne: false; referencedRelation: "categories"; referencedColumns: ["id"] },
+          { foreignKeyName: "recurring_transaction_occurrences_override_to_account_id_fkey"; columns: ["override_to_account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["id"] },
+          { foreignKeyName: "recurring_transaction_occurrences_recurring_transaction_id_fkey"; columns: ["recurring_transaction_id"]; isOneToOne: false; referencedRelation: "recurring_transactions"; referencedColumns: ["id"] },
+          { foreignKeyName: "recurring_transaction_occurrences_transaction_id_fkey"; columns: ["transaction_id"]; isOneToOne: false; referencedRelation: "transactions"; referencedColumns: ["id"] },
+        ]
+      }
+      recurring_transaction_versions: {
+        Row: {
+          account_id: string
+          amount: number
+          category_id: string | null
+          created_at: string
+          description: string | null
+          effective_date: string
+          id: string
+          recurring_transaction_id: string
+          to_account_id: string | null
+          transaction_type: string
+          recurrence_kind: string
+          recurrence_unit: string | null
+          recurrence_interval: number | null
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          effective_date: string
+          id?: string
+          recurring_transaction_id: string
+          to_account_id?: string | null
+          transaction_type: string
+          recurrence_kind: string
+          recurrence_unit?: string | null
+          recurrence_interval?: number | null
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          effective_date?: string
+          id?: string
+          recurring_transaction_id?: string
+          to_account_id?: string | null
+          transaction_type?: string
+          recurrence_kind?: string
+          recurrence_unit?: string | null
+          recurrence_interval?: number | null
+        }
+        Relationships: [
+          { foreignKeyName: "recurring_transaction_versions_account_id_fkey"; columns: ["account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["id"] },
+          { foreignKeyName: "recurring_transaction_versions_category_id_fkey"; columns: ["category_id"]; isOneToOne: false; referencedRelation: "categories"; referencedColumns: ["id"] },
+          { foreignKeyName: "recurring_transaction_versions_recurring_transaction_id_fkey"; columns: ["recurring_transaction_id"]; isOneToOne: false; referencedRelation: "recurring_transactions"; referencedColumns: ["id"] },
+          { foreignKeyName: "recurring_transaction_versions_to_account_id_fkey"; columns: ["to_account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["id"] },
+        ]
+      }
+      recurring_transactions: {
+        Row: {
+          account_id: string
+          amount: number
+          category_id: string | null
+          created_at: string
+          description: string | null
+          end_date: string | null
+          id: string
+          is_active: boolean
+          recurrence_interval: number | null
+          recurrence_kind: string
+          recurrence_unit: string | null
+          start_date: string
+          to_account_id: string | null
+          transaction_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          recurrence_interval?: number | null
+          recurrence_kind: string
+          recurrence_unit?: string | null
+          start_date: string
+          to_account_id?: string | null
+          transaction_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          recurrence_interval?: number | null
+          recurrence_kind?: string
+          recurrence_unit?: string | null
+          start_date?: string
+          to_account_id?: string | null
+          transaction_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          { foreignKeyName: "recurring_transactions_account_id_fkey"; columns: ["account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["id"] },
+          { foreignKeyName: "recurring_transactions_category_id_fkey"; columns: ["category_id"]; isOneToOne: false; referencedRelation: "categories"; referencedColumns: ["id"] },
+          { foreignKeyName: "recurring_transactions_to_account_id_fkey"; columns: ["to_account_id"]; isOneToOne: false; referencedRelation: "accounts"; referencedColumns: ["id"] },
+          { foreignKeyName: "recurring_transactions_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ]
+      }
       transactions: {
         Row: {
           account_id: string
@@ -344,6 +510,7 @@ export type Database = {
           to_account_id: string | null
           transaction_type: string
           user_id: string
+          recurring_transaction_id: string | null
         }
         Insert: {
           account_id: string
@@ -355,6 +522,7 @@ export type Database = {
           to_account_id?: string | null
           transaction_type: string
           user_id: string
+          recurring_transaction_id?: string | null
         }
         Update: {
           account_id?: string
@@ -366,6 +534,7 @@ export type Database = {
           to_account_id?: string | null
           transaction_type?: string
           user_id?: string
+          recurring_transaction_id?: string | null
         }
         Relationships: [
           {
@@ -396,6 +565,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "transactions_recurring_transaction_id_fkey"
+            columns: ["recurring_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_transactions"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -403,6 +579,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_recurring_edit_from_occurrence: { Args: { p_effective_date: string; p_recurring_transaction_id: string; p_version: Json }; Returns: undefined }
+      create_and_materialize_recurring_transaction: { Args: { p_rule: Json; p_through_month: string }; Returns: Database["public"]["Tables"]["recurring_transactions"]["Row"] }
+      delete_recurring_from_occurrence: { Args: { p_effective_date: string; p_recurring_transaction_id: string }; Returns: undefined }
+      materialize_recurring_transactions: { Args: { p_month: string }; Returns: Database["public"]["Tables"]["transactions"]["Row"][] }
       purge_demo_user: { Args: never; Returns: undefined }
       purge_stale_demo_users: { Args: never; Returns: undefined }
       seed_demo_data: { Args: never; Returns: undefined }
