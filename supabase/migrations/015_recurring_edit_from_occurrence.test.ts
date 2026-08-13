@@ -64,6 +64,10 @@ describe("recurring edit-from-occurrence RPC migration contract", () => {
     expect(migration).toMatch(/v_recurrence_kind = 'never' AND v_date = p_effective_date/);
   });
 
+  it("always treats the effective date as a candidate so the selected occurrence is updated even if it does not fit the new cadence", () => {
+    expect(migration).toMatch(/v_is_candidate := v_date = p_effective_date OR \(/);
+  });
+
   it("never pre-materializes occurrences itself", () => {
     expect(migration).not.toMatch(/status = 'materialized'/);
   });

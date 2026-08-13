@@ -103,8 +103,12 @@ BEGIN
   v_date := p_effective_date;
   WHILE v_date <= v_span_end LOOP
     -- Occurrence candidate under the new version, cadence anchored at the
-    -- effective date (same math as materialize_recurring_transactions).
-    v_is_candidate := v_date >= p_effective_date
+    -- effective date (same math as materialize_recurring_transactions). The
+    -- effective date itself is ALWAYS a candidate: the selected occurrence is
+    -- the anchor of the edit and must be updated to the new version template
+    -- even when it does not fit the new cadence.
+    v_is_candidate := v_date = p_effective_date OR (
+      v_date >= p_effective_date
       AND (v_recurrence_kind = 'never' AND v_date = p_effective_date
         OR v_recurrence_kind = 'workday' AND EXTRACT(ISODOW FROM v_date) < 6
         OR v_recurrence_kind = 'interval' AND (
@@ -117,7 +121,7 @@ BEGIN
             EXTRACT(MONTH FROM v_date) = EXTRACT(MONTH FROM p_effective_date) AND
             EXTRACT(DAY FROM v_date) = LEAST(EXTRACT(DAY FROM p_effective_date), EXTRACT(DAY FROM (date_trunc('month', v_date) + INTERVAL '1 month - 1 day')::date)) AND
             (EXTRACT(YEAR FROM v_date)::integer - EXTRACT(YEAR FROM p_effective_date)::integer) % v_recurrence_interval = 0)
-        ));
+        )));
 
     SELECT * INTO v_occurrence FROM public.recurring_transaction_occurrences
       WHERE recurring_transaction_id = p_recurring_transaction_id AND occurrence_date = v_date

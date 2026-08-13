@@ -28,6 +28,26 @@ describe("validateRecurrenceRule", () => {
     expect(validateRecurrenceRule(rule({ kind: "interval", unit: "day", interval: 1 }, ""))).toContain("startDate");
   });
 
+  it("rejects intervals outside the supported cadence set", () => {
+    expect(validateRecurrenceRule(rule({ kind: "interval", unit: "day", interval: 3 }))).toContain("interval");
+    expect(validateRecurrenceRule(rule({ kind: "interval", unit: "month", interval: 4 }))).toContain("interval");
+    expect(validateRecurrenceRule(rule({ kind: "interval", unit: "year", interval: 2 }))).toContain("interval");
+  });
+
+  it("accepts every supported interval cadence", () => {
+    expect(validateRecurrenceRule(rule({ kind: "interval", unit: "day", interval: 1 }))).toEqual([]);
+    expect(validateRecurrenceRule(rule({ kind: "interval", unit: "day", interval: 2 }))).toEqual([]);
+    expect(validateRecurrenceRule(rule({ kind: "interval", unit: "week", interval: 1 }))).toEqual([]);
+    expect(validateRecurrenceRule(rule({ kind: "interval", unit: "week", interval: 2 }))).toEqual([]);
+    expect(validateRecurrenceRule(rule({ kind: "interval", unit: "week", interval: 3 }))).toEqual([]);
+    expect(validateRecurrenceRule(rule({ kind: "interval", unit: "week", interval: 4 }))).toEqual([]);
+    expect(validateRecurrenceRule(rule({ kind: "interval", unit: "month", interval: 1 }))).toEqual([]);
+    expect(validateRecurrenceRule(rule({ kind: "interval", unit: "month", interval: 2 }))).toEqual([]);
+    expect(validateRecurrenceRule(rule({ kind: "interval", unit: "month", interval: 3 }))).toEqual([]);
+    expect(validateRecurrenceRule(rule({ kind: "interval", unit: "month", interval: 6 }))).toEqual([]);
+    expect(validateRecurrenceRule(rule({ kind: "interval", unit: "year", interval: 1 }))).toEqual([]);
+  });
+
   it("includes the end date when it is an occurrence", () => {
     const daily = rule({ kind: "interval", unit: "day", interval: 1 }, "2026-01-01", "2026-01-03");
     expect(occurrencesInMonth(daily, "2026-01")).toEqual(["2026-01-01", "2026-01-02", "2026-01-03"]);
@@ -43,6 +63,12 @@ describe("recurrence calculations", () => {
     expect(occurrencesInMonth(rule({ kind: "interval", unit: "day", interval: 2 }), "2026-01")).toEqual([
       "2026-01-01", "2026-01-03", "2026-01-05", "2026-01-07", "2026-01-09", "2026-01-11", "2026-01-13", "2026-01-15", "2026-01-17", "2026-01-19", "2026-01-21", "2026-01-23", "2026-01-25", "2026-01-27", "2026-01-29", "2026-01-31",
     ]);
+  });
+
+  it("never rules only ever have their start date as an occurrence", () => {
+    const never = rule({ kind: "never", unit: null, interval: null }, "2025-01-10");
+    expect(occurrencesInMonth(never, "2026-01")).toEqual([]);
+    expect(occurrencesInMonth(never, "2025-01")).toEqual(["2025-01-10"]);
   });
 
   it("skips weekends for workdays and resumes on Monday", () => {

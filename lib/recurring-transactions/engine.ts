@@ -45,7 +45,16 @@ export function validateRecurrenceRule(rule: RecurrenceRule): string[] {
   if (!["never", "interval", "workday"].includes(kind)) errors.push("kind");
   if (kind === "interval") {
     if (!unit || !UNITS.includes(unit)) errors.push("unit");
-    if (!Number.isInteger(interval) || interval === null || interval <= 0) errors.push("interval");
+    if (!Number.isInteger(interval) || interval === null || interval <= 0) {
+      errors.push("interval");
+    } else if (
+      (unit === "day" && ![1, 2].includes(interval)) ||
+      (unit === "week" && ![1, 2, 3, 4].includes(interval)) ||
+      (unit === "month" && ![1, 2, 3, 6].includes(interval)) ||
+      (unit === "year" && interval !== 1)
+    ) {
+      errors.push("interval");
+    }
   } else if (kind === "never" || kind === "workday") {
     if (unit !== null) errors.push("unit");
     if (interval !== null) errors.push("interval");
@@ -135,6 +144,12 @@ export function occurrencesInMonth(rule: RecurrenceRule, month: string): string[
   if (validateRecurrenceRule(rule).length || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) return [];
   const monthStart = parse(`${month}-01`, DATE_FORMAT, new Date(2000, 0, 1));
   const monthEnd = endOfMonth(monthStart);
+  // A `never` rule has exactly one occurrence: its start date. Only report it
+  // when the requested month contains that date (mirrors isOccurrenceDate).
+  if (rule.recurrence.kind === "never") {
+    const start = parseDate(rule.startDate);
+    return isBefore(start, monthStart) || isAfter(start, monthEnd) ? [] : [rule.startDate];
+  }
   const results: string[] = [];
   let index = indexAfter(rule, addDays(monthStart, -1));
   while (isBefore(occurrenceAt(rule, index), monthStart)) index += 1;
