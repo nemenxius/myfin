@@ -75,6 +75,13 @@ BEGIN
       OR (v_recurrence_unit = 'year' AND v_recurrence_interval = 1)))
     OR (v_recurrence_kind IN ('never', 'workday') AND v_recurrence_unit IS NULL AND v_recurrence_interval IS NULL)
   ) THEN RAISE EXCEPTION 'Invalid recurrence configuration'; END IF;
+  -- NULL-safe guards: comparisons like `v_recurrence_interval IN (1, 2)` yield
+  -- NULL when the interval is NULL, so the CHECK-style condition above would let
+  -- a structurally invalid cadence through. IS [NOT] NULL never short-circuits.
+  IF (v_recurrence_kind = 'interval' AND (v_recurrence_unit IS NULL OR v_recurrence_interval IS NULL))
+     OR (v_recurrence_kind IN ('never', 'workday') AND (v_recurrence_unit IS NOT NULL OR v_recurrence_interval IS NOT NULL)) THEN
+    RAISE EXCEPTION 'Invalid recurrence configuration';
+  END IF;
 
   -- SECURITY DEFINER must re-check resolved account/category ownership.
   IF NOT EXISTS (SELECT 1 FROM public.accounts WHERE id = v_account_id AND user_id = v_uid)

@@ -31,6 +31,12 @@ describe("recurring edit-from-occurrence RPC migration contract", () => {
     expect(migration).toMatch(/v_recurrence_kind IN \('never', 'workday'\) AND v_recurrence_unit IS NULL AND v_recurrence_interval IS NULL/);
   });
 
+  it("rejects NULL cadence fields with NULL-safe guards that never short-circuit", () => {
+    expect(migration).toMatch(/IF \(v_recurrence_kind = 'interval' AND \(v_recurrence_unit IS NULL OR v_recurrence_interval IS NULL\)\)\s*OR \(v_recurrence_kind IN \('never', 'workday'\) AND \(v_recurrence_unit IS NOT NULL OR v_recurrence_interval IS NOT NULL\)\) THEN[\s\S]*RAISE EXCEPTION 'Invalid recurrence configuration'/);
+    expect(migration).toMatch(/v_recurrence_unit IS NULL OR v_recurrence_interval IS NULL/);
+    expect(migration).toMatch(/v_recurrence_unit IS NOT NULL OR v_recurrence_interval IS NOT NULL/);
+  });
+
   it("re-checks resolved account/category ownership inside the definer function", () => {
     expect(migration).toMatch(/SELECT 1 FROM public\.accounts WHERE id = v_account_id AND user_id = v_uid/);
     expect(migration).toMatch(/SELECT 1 FROM public\.accounts WHERE id = v_to_account_id AND user_id = v_uid/);
