@@ -431,7 +431,7 @@ export function TransactionList({ month }: { month: string }) {
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           variant="destructive"
-                          onClick={() => setDeleting(transaction)}
+                          onClick={() => openDelete(transaction)}
                         >
                           <Trash2 />
                           Delete
