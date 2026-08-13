@@ -129,6 +129,17 @@ export function TransactionForm({
   const [date, setDate] = useState(today);
   const [description, setDescription] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Union of every submit path's pending state: gates the dialog while a
+  // mutation is in flight so a slow RPC cannot double-submit or close
+  // silently before the result is known.
+  const isSubmitting =
+    addTransaction.isPending ||
+    updateTransaction.isPending ||
+    editOccurrenceOnly.isPending ||
+    editFromOccurrence.isPending ||
+    createRecurringTransaction.isPending;
 
   // Recurrence state (structural, not a display string)
   const [recurrenceKey, setRecurrenceKey] = useState("never");
@@ -148,6 +159,7 @@ export function TransactionForm({
   useEffect(() => {
     if (!open) return;
     setErrors({});
+    setSubmitError(null);
 
     if (transaction) {
       setType(transaction.transaction_type as TransactionType);
@@ -216,9 +228,12 @@ export function TransactionForm({
     return Object.keys(next).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!validate()) return;
+
+    setSubmitError(null);
 
     const signedAmount =
       type === "Expense" ? -Math.abs(Number(amount)) : Math.abs(Number(amount));
@@ -239,65 +254,83 @@ export function TransactionForm({
       description: description || null,
     };
 
-    if (transaction) {
-      if (isRecurringEdit) {
-        const recurringTransactionId = transaction.recurring_transaction_id!;
-        const occurrenceDate = isoToDateInput(transaction.date);
-        const transactionUpdates = {
-          account_id: accountId,
-          to_account_id: type === "Transfer" ? toAccountId : null,
-          category_id: categoryId || null,
-          amount: signedAmount,
-          transaction_type: type,
-          description: description || null,
-        };
-        if (editScope === "occurrence") {
-          editOccurrenceOnly.mutate({
-            recurringTransactionId,
-            occurrenceDate,
-            transactionId: transaction.id,
-            updates: transactionUpdates,
-          });
+    try {
+      if (transaction) {
+        if (isRecurringEdit) {
+          const recurringTransactionId = transaction.recurring_transaction_id!;
+          const occurrenceDate = isoToDateInput(transaction.date);
+          const transactionUpdates = {
+            account_id: accountId,
+            to_account_id: type === "Transfer" ? toAccountId : null,
+            category_id: categoryId || null,
+            amount: signedAmount,
+            transaction_type: type,
+            description: description || null,
+          };
+          if (editScope === "occurrence") {
+            await editOccurrenceOnly.mutateAsync({
+              recurringTransactionId,
+              occurrenceDate,
+              transactionId: transaction.id,
+              updates: transactionUpdates,
+            });
+          } else {
+            await editFromOccurrence.mutateAsync({
+              recurringTransactionId,
+              effectiveDate: occurrenceDate,
+              updates: {
+                ...transactionUpdates,
+                recurrence_kind: selectedOption.kind,
+                recurrence_unit: selectedOption.unit,
+                recurrence_interval: selectedOption.interval,
+              },
+            });
+          }
         } else {
-          editFromOccurrence.mutate({
-            recurringTransactionId,
-            effectiveDate: occurrenceDate,
-            updates: {
-              ...transactionUpdates,
-              recurrence_kind: selectedOption.kind,
-              recurrence_unit: selectedOption.unit,
-              recurrence_interval: selectedOption.interval,
-            },
-          });
+          await updateTransaction.mutateAsync({ id: transaction.id, ...basePayload });
         }
       } else {
-        updateTransaction.mutate({ id: transaction.id, ...basePayload });
+        if (selectedOption.kind === "never") {
+          await addTransaction.mutateAsync(basePayload);
+        } else {
+          await createRecurringTransaction.mutateAsync({
+            account_id: accountId,
+            to_account_id: type === "Transfer" ? toAccountId : null,
+            category_id: categoryId || null,
+            amount: signedAmount,
+            transaction_type: type,
+            description: description || null,
+            start_date: date,
+            end_date: endMode === "date" && recurrenceEndDate ? recurrenceEndDate : null,
+            recurrence_kind: selectedOption.kind,
+            recurrence_unit: selectedOption.unit,
+            recurrence_interval: selectedOption.interval,
+          });
+        }
       }
-    } else {
-      if (selectedOption.kind === "never") {
-        addTransaction.mutate(basePayload);
-      } else {
-        createRecurringTransaction.mutate({
-          account_id: accountId,
-          to_account_id: type === "Transfer" ? toAccountId : null,
-          category_id: categoryId || null,
-          amount: signedAmount,
-          transaction_type: type,
-          description: description || null,
-          start_date: date,
-          end_date: endMode === "date" && recurrenceEndDate ? recurrenceEndDate : null,
-          recurrence_kind: selectedOption.kind,
-          recurrence_unit: selectedOption.unit,
-          recurrence_interval: selectedOption.interval,
-        });
-      }
-    }
 
-    onOpenChange(false);
+      onOpenChange(false);
+    } catch (err) {
+      // Keep the dialog open so the failure is visible; the hook-level
+      // onMutate/onError handlers already rolled back optimistic updates.
+      setSubmitError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again."
+      );
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        // Keep the dialog open while a mutation is in flight so a failed
+        // submit surfaces its error instead of closing mid-flight.
+        if (!nextOpen && isSubmitting) return;
+        onOpenChange(nextOpen);
+      }}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
@@ -582,15 +615,22 @@ export function TransactionForm({
             </div>
           )}
 
+          {submitError && (
+            <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              {submitError}
+            </p>
+          )}
+
           <DialogFooter>
             <Button
               type="button"
               variant="outline"
+              disabled={isSubmitting}
               onClick={() => onOpenChange(false)}
             >
               Cancel
             </Button>
-            <Button type="submit">
+            <Button type="submit" disabled={isSubmitting}>
               {transaction ? "Save Changes" : "Add Transaction"}
             </Button>
           </DialogFooter>

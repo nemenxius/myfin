@@ -108,6 +108,10 @@ interface ScopeDialogProps {
   onValueChange: (scope: EditScope) => void;
   onConfirm: () => void;
   onOpenChange: (open: boolean) => void;
+  /** Rules/versions queries resolved; required before a future/series edit
+   *  can be prefilled from the effective version (occurrence-only edits
+   *  never need it). Delete flows are unaffected. */
+  prefillReady: boolean;
 }
 
 function ScopeDialog({
@@ -117,6 +121,7 @@ function ScopeDialog({
   onValueChange,
   onConfirm,
   onOpenChange,
+  prefillReady,
 }: ScopeDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -132,30 +137,40 @@ function ScopeDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-2">
-          {SCOPE_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              aria-pressed={value === option.value}
-              onClick={() => onValueChange(option.value)}
-              className={cn(
-                "flex items-start gap-3 rounded-xl border border-border/60 p-3 text-left transition-colors hover:bg-muted/40",
-                value === option.value && "border-[#18848c] bg-[#18848c]/10"
-              )}
-            >
-              <option.icon className="mt-0.5 h-4 w-4 shrink-0 text-fog" />
-              <span>
-                <span className="block text-sm font-medium text-foreground">
-                  {option.label}
+          {SCOPE_OPTIONS.map((option) => {
+            // Future/series edits are prefilled from the effective version for
+            // the edited occurrence; opening them before the rules/versions
+            // queries resolve would prefill stale cadence and the form would
+            // submit it as an explicit override. Disable until both are loaded.
+            const disabled =
+              mode === "edit" && option.value !== "occurrence" && !prefillReady;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                disabled={disabled}
+                aria-pressed={value === option.value}
+                onClick={() => onValueChange(option.value)}
+                className={cn(
+                  "flex items-start gap-3 rounded-xl border border-border/60 p-3 text-left transition-colors hover:bg-muted/40",
+                  value === option.value && "border-[#18848c] bg-[#18848c]/10",
+                  disabled && "pointer-events-none opacity-50"
+                )}
+              >
+                <option.icon className="mt-0.5 h-4 w-4 shrink-0 text-fog" />
+                <span>
+                  <span className="block text-sm font-medium text-foreground">
+                    {option.label}
+                  </span>
+                  <span className="block text-xs text-fog">
+                    {mode === "edit"
+                      ? option.editDescription
+                      : option.deleteDescription}
+                  </span>
                 </span>
-                <span className="block text-xs text-fog">
-                  {mode === "edit"
-                    ? option.editDescription
-                    : option.deleteDescription}
-                </span>
-              </span>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -180,6 +195,12 @@ export function TransactionList({ month }: { month: string }) {
   const { data: categories } = useCategories();
   const { data: accounts } = useAccounts();
   const monthName = monthLabel(month);
+
+  // Both queries must resolve before a future/series edit can be prefilled
+  // from the effective version (the prefill falls back to the base rule, and
+  // a null prefill would default the form's recurrence to "never"). `undefined`
+  // means still loading; an empty array means loaded with no data.
+  const prefillReady = recurringRules !== undefined && versions !== undefined;
 
   const recurringRuleMap = useMemo(() => {
     const map = new Map<string, RecurringTransaction>();
@@ -260,6 +281,10 @@ export function TransactionList({ month }: { month: string }) {
     const scope = pendingScope;
 
     if (mode === "edit") {
+      // The ScopeDialog disables future/series options until the rules and
+      // versions queries resolve; this guard is a backstop so a stale prefill
+      // can never open the edit form for those scopes.
+      if (scope !== "occurrence" && !prefillReady) return;
       setEditScope(scope);
       const baseRule = transaction.recurring_transaction_id
         ? recurringRuleMap.get(transaction.recurring_transaction_id) ?? null
@@ -580,6 +605,7 @@ export function TransactionList({ month }: { month: string }) {
         onValueChange={setPendingScope}
         onConfirm={confirmScope}
         onOpenChange={(open) => !open && setScopeDialog(null)}
+        prefillReady={prefillReady}
       />
 
       <AlertDialog open={!!deleting} onOpenChange={(open) => !open && setDeleting(null)}>
