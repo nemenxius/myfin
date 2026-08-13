@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useAccounts } from "@/hooks/use-accounts";
 import { useCategories } from "@/hooks/use-categories";
 import { useProfile } from "@/hooks/use-profile";
 import { useTransactions } from "@/hooks/use-transactions";
+import { useRecurringTransactions } from "@/hooks/use-recurring-transactions";
+import type { RecurringTransaction } from "@/hooks/use-recurring-transactions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +32,7 @@ import { dateInputToISO, isoToDateInput, isoToTimeInput } from "@/lib/date";
 
 type Transaction = Tables<"transactions">;
 type TransactionType = "Income" | "Expense" | "Transfer";
+export type EditScope = "occurrence" | "future" | "series";
 
 interface TransactionFormProps {
   open: boolean;
@@ -37,6 +40,10 @@ interface TransactionFormProps {
   transaction?: Transaction | null;
   defaultAccountId?: string;
   defaultDate?: string;
+  /** Recurring-series edit scope; present only when editing an occurrence of a recurring rule. */
+  editScope?: EditScope | null;
+  /** The recurring rule being edited; used to prefill recurrence controls for future/series edits. */
+  recurringRule?: RecurringTransaction | null;
 }
 
 interface FormErrors {
@@ -44,7 +51,43 @@ interface FormErrors {
   accountId?: string;
   toAccountId?: string;
   date?: string;
+  recurrenceEndDate?: string;
 }
+
+type RecurrenceKind = "never" | "interval" | "workday";
+type RecurrenceUnit = "day" | "week" | "month" | "year";
+
+interface RecurrenceOption {
+  key: string;
+  label: string;
+  kind: RecurrenceKind;
+  unit: RecurrenceUnit | null;
+  interval: number | null;
+}
+
+const RECURRENCE_OPTIONS: RecurrenceOption[] = [
+  { key: "never", label: "Never", kind: "never", unit: null, interval: null },
+  { key: "day-1", label: "Every day", kind: "interval", unit: "day", interval: 1 },
+  { key: "day-2", label: "Every 2 days", kind: "interval", unit: "day", interval: 2 },
+  { key: "workday", label: "Every work day", kind: "workday", unit: null, interval: null },
+  { key: "week-1", label: "Every week", kind: "interval", unit: "week", interval: 1 },
+  { key: "week-2", label: "Every 2 weeks", kind: "interval", unit: "week", interval: 2 },
+  { key: "week-3", label: "Every 3 weeks", kind: "interval", unit: "week", interval: 3 },
+  { key: "week-4", label: "Every 4 weeks", kind: "interval", unit: "week", interval: 4 },
+  { key: "month-1", label: "Every month", kind: "interval", unit: "month", interval: 1 },
+  { key: "month-2", label: "Every 2 months", kind: "interval", unit: "month", interval: 2 },
+  { key: "month-3", label: "Every 3 months", kind: "interval", unit: "month", interval: 3 },
+  { key: "month-6", label: "Every 6 months", kind: "interval", unit: "month", interval: 6 },
+  { key: "year-1", label: "Every year", kind: "interval", unit: "year", interval: 1 },
+];
+
+const optionForRule = (rule: Pick<RecurringTransaction, "recurrence_kind" | "recurrence_unit" | "recurrence_interval">): RecurrenceOption =>
+  RECURRENCE_OPTIONS.find(
+    (option) =>
+      option.kind === rule.recurrence_kind &&
+      option.unit === rule.recurrence_unit &&
+      option.interval === rule.recurrence_interval
+  ) ?? RECURRENCE_OPTIONS[0];
 
 const today = () => isoToDateInput(new Date().toISOString());
 
@@ -54,11 +97,18 @@ export function TransactionForm({
   transaction,
   defaultAccountId,
   defaultDate,
+  editScope = null,
+  recurringRule = null,
 }: TransactionFormProps) {
   const { data: accounts, isLoading: accountsLoading } = useAccounts();
   const { data: categories } = useCategories();
   const { data: profile } = useProfile();
   const { addTransaction, updateTransaction } = useTransactions();
+  const {
+    createRecurringTransaction,
+    editOccurrenceOnly,
+    editFromOccurrence,
+  } = useRecurringTransactions();
 
   const [type, setType] = useState<TransactionType>("Expense");
   const [amount, setAmount] = useState("");
@@ -68,6 +118,21 @@ export function TransactionForm({
   const [date, setDate] = useState(today);
   const [description, setDescription] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
+
+  // Recurrence state (structural, not a display string)
+  const [recurrenceKey, setRecurrenceKey] = useState("never");
+  const [endMode, setEndMode] = useState<"never" | "date">("never");
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState("");
+
+  const isRecurringEdit =
+    !!transaction?.recurring_transaction_id && editScope !== null;
+  const showRecurrence =
+    !transaction || (isRecurringEdit && (editScope === "future" || editScope === "series"));
+
+  const selectedOption = useMemo(
+    () => RECURRENCE_OPTIONS.find((option) => option.key === recurrenceKey) ?? RECURRENCE_OPTIONS[0],
+    [recurrenceKey]
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -81,6 +146,17 @@ export function TransactionForm({
       setCategoryId(transaction.category_id ?? "");
       setDate(isoToDateInput(transaction.date));
       setDescription(transaction.description ?? "");
+
+      if (isRecurringEdit && (editScope === "future" || editScope === "series") && recurringRule) {
+        const option = optionForRule(recurringRule);
+        setRecurrenceKey(option.key);
+        setEndMode(recurringRule.end_date ? "date" : "never");
+        setRecurrenceEndDate(recurringRule.end_date ?? "");
+      } else {
+        setRecurrenceKey("never");
+        setEndMode("never");
+        setRecurrenceEndDate("");
+      }
     } else {
       setType("Expense");
       setAmount("");
@@ -89,8 +165,11 @@ export function TransactionForm({
       setCategoryId(profile?.default_category_id ?? "");
       setDate(defaultDate ?? today());
       setDescription("");
+      setRecurrenceKey("never");
+      setEndMode("never");
+      setRecurrenceEndDate("");
     }
-  }, [open, transaction, defaultAccountId, defaultDate, profile?.default_account_id, profile?.default_category_id]);
+  }, [open, transaction, defaultAccountId, defaultDate, profile?.default_account_id, profile?.default_category_id, isRecurringEdit, editScope, recurringRule]);
 
   const validate = (): boolean => {
     const next: FormErrors = {};
@@ -112,6 +191,15 @@ export function TransactionForm({
     if (!date) {
       next.date = "Please select a date.";
     }
+    // End dates are rule-level and can only be set when creating a rule;
+    // versions that power "this and future"/series edits cannot carry them.
+    if (!transaction && selectedOption.kind !== "never" && endMode === "date" && recurrenceEndDate) {
+      const start = dateInputToISO(date);
+      const end = dateInputToISO(recurrenceEndDate);
+      if (new Date(end) < new Date(start)) {
+        next.recurrenceEndDate = "End date must not be before the start date.";
+      }
+    }
 
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -127,7 +215,7 @@ export function TransactionForm({
     const now = new Date();
     const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
-    const payload = {
+    const basePayload = {
       account_id: accountId,
       to_account_id: type === "Transfer" ? toAccountId : null,
       category_id: categoryId || null,
@@ -141,9 +229,57 @@ export function TransactionForm({
     };
 
     if (transaction) {
-      updateTransaction.mutate({ id: transaction.id, ...payload });
+      if (isRecurringEdit) {
+        const recurringTransactionId = transaction.recurring_transaction_id!;
+        const occurrenceDate = isoToDateInput(transaction.date);
+        const transactionUpdates = {
+          account_id: accountId,
+          to_account_id: type === "Transfer" ? toAccountId : null,
+          category_id: categoryId || null,
+          amount: signedAmount,
+          transaction_type: type,
+          description: description || null,
+        };
+        if (editScope === "occurrence") {
+          editOccurrenceOnly.mutate({
+            recurringTransactionId,
+            occurrenceDate,
+            transactionId: transaction.id,
+            updates: transactionUpdates,
+          });
+        } else {
+          editFromOccurrence.mutate({
+            recurringTransactionId,
+            effectiveDate: occurrenceDate,
+            updates: {
+              ...transactionUpdates,
+              recurrence_kind: selectedOption.kind,
+              recurrence_unit: selectedOption.unit,
+              recurrence_interval: selectedOption.interval,
+            },
+          });
+        }
+      } else {
+        updateTransaction.mutate({ id: transaction.id, ...basePayload });
+      }
     } else {
-      addTransaction.mutate(payload);
+      if (selectedOption.kind === "never") {
+        addTransaction.mutate(basePayload);
+      } else {
+        createRecurringTransaction.mutate({
+          account_id: accountId,
+          to_account_id: type === "Transfer" ? toAccountId : null,
+          category_id: categoryId || null,
+          amount: signedAmount,
+          transaction_type: type,
+          description: description || null,
+          start_date: date,
+          end_date: endMode === "date" && recurrenceEndDate ? recurrenceEndDate : null,
+          recurrence_kind: selectedOption.kind,
+          recurrence_unit: selectedOption.unit,
+          recurrence_interval: selectedOption.interval,
+        });
+      }
     }
 
     onOpenChange(false);
@@ -358,6 +494,76 @@ export function TransactionForm({
                 />
               </div>
             </div>
+
+          {showRecurrence && (
+            <div className="grid gap-3 rounded-xl border border-border/50 bg-muted/20 p-3">
+              <div className={`grid grid-cols-1 gap-3 ${transaction ? "" : "sm:grid-cols-2"}`}>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="recurrence">Recurrence</Label>
+                  <Select
+                    value={recurrenceKey}
+                    onValueChange={(value) => {
+                      if (value == null) return;
+                      setRecurrenceKey(value);
+                      if (value === "never") {
+                        setEndMode("never");
+                        setRecurrenceEndDate("");
+                      }
+                    }}
+                  >
+                    <SelectTrigger id="recurrence" className="w-full">
+                      <SelectValue placeholder="Select recurrence" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {RECURRENCE_OPTIONS.map((option) => (
+                        <SelectItem key={option.key} value={option.key}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {!transaction && selectedOption.kind !== "never" && (
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="recurrence-end">Ends</Label>
+                    <Select
+                      value={endMode}
+                      onValueChange={(value) => {
+                        if (value == null) return;
+                        setEndMode(value as "never" | "date");
+                        if (value === "never") setRecurrenceEndDate("");
+                      }}
+                    >
+                      <SelectTrigger id="recurrence-end" className="w-full">
+                        <SelectValue placeholder="Ends" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="never">Never</SelectItem>
+                        <SelectItem value="date">On a date</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+
+              {!transaction && selectedOption.kind !== "never" && endMode === "date" && (
+                <div className="grid gap-1.5">
+                  <Label htmlFor="recurrence-end-date">End date</Label>
+                  <Input
+                    id="recurrence-end-date"
+                    type="date"
+                    value={recurrenceEndDate}
+                    onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                    aria-invalid={!!errors.recurrenceEndDate}
+                  />
+                  {errors.recurrenceEndDate && (
+                    <p className="text-xs text-destructive">{errors.recurrenceEndDate}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           <DialogFooter>
             <Button
