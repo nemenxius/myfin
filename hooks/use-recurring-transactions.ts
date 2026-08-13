@@ -8,9 +8,17 @@ import type { Tables, TablesInsert, TablesUpdate } from "@/types/database";
 export type RecurringTransaction = Tables<"recurring_transactions">;
 export type RecurringTransactionInput = Omit<TablesInsert<"recurring_transactions">, "id" | "user_id" | "created_at" | "updated_at">;
 export type RecurringTransactionFields = Omit<TablesUpdate<"recurring_transactions">, "id" | "user_id" | "created_at" | "updated_at">;
+export type RecurringVersion = Tables<"recurring_transaction_versions">;
 export type TransactionFields = Partial<Pick<TablesInsert<"transactions">, "account_id" | "to_account_id" | "category_id" | "amount" | "transaction_type" | "description">>;
 
+export type RecurringTemplateFields = Pick<
+  RecurringTransaction,
+  "account_id" | "to_account_id" | "category_id" | "amount" | "transaction_type" | "description" |
+  "recurrence_kind" | "recurrence_unit" | "recurrence_interval"
+>;
+
 const recurringKey = ["recurring-transactions"] as const;
+const versionsKey = ["recurring-versions"] as const;
 const transactionKey = ["transactions"] as const;
 
 export function monthsThroughCurrent(startMonth: string, currentMonth = format(new Date(), "yyyy-MM")): string[] {
@@ -46,6 +54,33 @@ const has = (value: object, key: string) => Object.prototype.hasOwnProperty.call
 const mergeFields = <T extends Record<string, unknown>>(base: T, changes: Partial<T>) =>
   Object.fromEntries(Object.keys(base).map((key) => [key, has(changes, key) ? changes[key as keyof T] : base[key]])) as T;
 
+/**
+ * Build the merge base for a "this and future"/series edit from the version
+ * effective on the edited occurrence date, falling back to the base rule when
+ * no version exists yet. Sourcing the base from the effective version (rather
+ * than always the rule) keeps cadence/omitted fields from stacking edits
+ * reverted by the rule's original values.
+ */
+export function mergeOverEffectiveVersion(
+  rule: RecurringTransaction,
+  effectiveVersion: RecurringVersion | null,
+  updates: Partial<RecurringTemplateFields>
+): RecurringTemplateFields {
+  const source = effectiveVersion ?? rule;
+  const base: RecurringTemplateFields = {
+    account_id: source.account_id,
+    to_account_id: source.to_account_id,
+    category_id: source.category_id,
+    amount: source.amount,
+    transaction_type: source.transaction_type,
+    description: source.description,
+    recurrence_kind: source.recurrence_kind,
+    recurrence_unit: source.recurrence_unit,
+    recurrence_interval: source.recurrence_interval,
+  };
+  return mergeFields(base, updates);
+}
+
 const occurrenceOverrides = (updates: TransactionFields) => Object.fromEntries(
   Object.entries(updates).map(([key, value]) => [`override_${key}`, value])
 );
@@ -58,6 +93,7 @@ function validateTransactionFields(fields: { transaction_type?: string | null; t
 const invalidate = (client: ReturnType<typeof useQueryClient>) => {
   void client.invalidateQueries({ queryKey: transactionKey });
   void client.invalidateQueries({ queryKey: recurringKey });
+  void client.invalidateQueries({ queryKey: versionsKey });
 };
 
 async function materialize(month: string) {
@@ -72,6 +108,15 @@ export function useRecurringTransactions() {
     queryKey: recurringKey,
     queryFn: async (): Promise<RecurringTransaction[]> => {
       const { data, error } = await supabaseClient.from("recurring_transactions").select("*").order("start_date", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const versionsQuery = useQuery({
+    queryKey: versionsKey,
+    queryFn: async (): Promise<RecurringVersion[]> => {
+      const { data, error } = await supabaseClient.from("recurring_transaction_versions").select("*").order("effective_date", { ascending: true });
       if (error) throw error;
       return data;
     },
@@ -127,17 +172,22 @@ export function useRecurringTransactions() {
     mutationFn: async ({ recurringTransactionId, effectiveDate, updates }: { recurringTransactionId: string; effectiveDate: string; updates: RecurringTransactionFields }) => {
       const { data: rule, error: ruleError } = await supabaseClient.from("recurring_transactions").select("*").eq("id", recurringTransactionId).single();
       if (ruleError) throw ruleError;
-      const version = mergeFields({
-        account_id: rule.account_id, to_account_id: rule.to_account_id, category_id: rule.category_id,
-        amount: rule.amount, transaction_type: rule.transaction_type, description: rule.description,
-        recurrence_kind: rule.recurrence_kind, recurrence_unit: rule.recurrence_unit, recurrence_interval: rule.recurrence_interval,
-      }, updates as Partial<typeof rule>);
-      validateTransactionFields(version);
-      validateInput({ ...version, start_date: effectiveDate, end_date: rule.end_date } as RecurringTransactionInput);
+      const { data: effectiveVersion, error: versionError } = await supabaseClient
+        .from("recurring_transaction_versions")
+        .select("*")
+        .eq("recurring_transaction_id", recurringTransactionId)
+        .lte("effective_date", effectiveDate)
+        .order("effective_date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (versionError) throw versionError;
+      const merged = mergeOverEffectiveVersion(rule, effectiveVersion, updates);
+      validateTransactionFields(merged);
+      validateInput({ ...merged, start_date: effectiveDate, end_date: rule.end_date } as RecurringTransactionInput);
       const { data, error } = await supabaseClient.rpc("apply_recurring_edit_from_occurrence", {
         p_recurring_transaction_id: recurringTransactionId,
         p_effective_date: effectiveDate,
-        p_version: version,
+        p_version: merged,
       });
       if (error) throw error;
       return data;
@@ -162,5 +212,5 @@ export function useRecurringTransactions() {
     onSettled: () => invalidate(queryClient),
   });
 
-  return { ...query, createRecurringTransaction, materializeMonth, editOccurrenceOnly, editFromOccurrence, deleteOccurrenceOnly, deleteFromOccurrence, cancelSeries };
+  return { ...query, versions: versionsQuery.data, createRecurringTransaction, materializeMonth, editOccurrenceOnly, editFromOccurrence, deleteOccurrenceOnly, deleteFromOccurrence, cancelSeries };
 }
