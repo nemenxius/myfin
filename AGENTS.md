@@ -185,6 +185,19 @@ Migration state to preserve:
   (inserts rule + backfills all occurrences through the current month) and
   `delete_recurring_from_occurrence` (soft-stops: sets rule `end_date` to
   effective date − 1, keeps earlier rows) SECURITY DEFINER functions.
+- `015_recurring_edit_from_occurrence.sql`: SECURITY DEFINER
+  `apply_recurring_edit_from_occurrence(p_recurring_transaction_id UUID,
+  p_effective_date DATE, p_version JSONB)` — "this and future"/series edit RPC
+  that validates the complete version payload (amount, type, transfer
+  destination, recurrence CHECKs identical to 012, resolved account/category
+  ownership), inserts the effective-dated version, then reconciles the span
+  from the effective date through the later of the current month end or the
+  latest existing occurrence (never past the inclusive rule `end_date`):
+  candidates update already-materialized transactions to the version template
+  and clear their occurrence overrides, non-candidates delete the transaction
+  and mark the occurrence `skipped` (durable no-reappear guarantee), pending
+  rows and row-less candidate dates are left for lazy materialization. Must be
+  applied remotely via the Supabase dashboard SQL editor.
 
 After schema changes, regenerate types with:
 
@@ -254,7 +267,7 @@ supabase gen types typescript --project-id <PROJECT_ID> --schema public > types/
   were superseded. Regenerate whenever the remote schema changes.
 - Tighten transaction insert/update RLS so `category_id` must be global or owned by the same user. Same ownership gap exists on `holding_transactions`: its foreign-ownership EXISTS policy is OR-combined with the `auth.uid()` ALL policy, so a user could insert a transaction referencing another user's `holding_id`. Migration 007 is not yet applied remotely, so an in-file fix is cheap before applying.
 - Net worth entries UPDATE RLS (010) now checks `auth.uid() = user_id` in `WITH CHECK`; the pre-existing transaction/holding foreign-ownership gaps above remain open.
-- Recurring transactions: end dates are rule-level and can only be set at creation (versions cannot carry them; `editFromOccurrence` merges only version columns). Consider a follow-up to let users end/edit a rule's end date from the list or a future recurring-management page. Also: `types/database.ts` must be regenerated with the Supabase CLI after migrations 012/013/014 are applied remotely.
+- Recurring transactions: end dates are rule-level and can only be set at creation (versions cannot carry them). Consider a follow-up to let users end/edit a rule's end date from the list or a future recurring-management page. Also: `types/database.ts` must be regenerated with the Supabase CLI after migrations 012/013/014/015 are applied remotely (the `apply_recurring_edit_from_occurrence` Functions entry was hand-added, consistent with prior hand-edit work).
 - Add UI feedback for failed category/account delete mutations instead of silent optimistic rollback. Same class applies to portfolio holding/transaction deletes.
 - Consider typing category/account update inputs to exclude `user_id`. Same applies to `updateHoldingTransaction` (caller-supplied updates are not stripped of `user_id`/`holding_id`/`created_at`; only safe fields are sent by the current form).
 - Consider a small icon-map drift test for `CATEGORY_ICONS` vs the internal icon map.

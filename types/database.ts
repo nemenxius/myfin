@@ -579,6 +579,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_recurring_edit_from_occurrence: { Args: { p_effective_date: string; p_recurring_transaction_id: string; p_version: Json }; Returns: undefined }
       create_and_materialize_recurring_transaction: { Args: { p_rule: Json; p_through_month: string }; Returns: Database["public"]["Tables"]["recurring_transactions"]["Row"] }
       delete_recurring_from_occurrence: { Args: { p_effective_date: string; p_recurring_transaction_id: string }; Returns: undefined }
       materialize_recurring_transactions: { Args: { p_month: string }; Returns: Database["public"]["Tables"]["transactions"]["Row"][] }

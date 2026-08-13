@@ -134,14 +134,12 @@ export function useRecurringTransactions() {
       }, updates as Partial<typeof rule>);
       validateTransactionFields(version);
       validateInput({ ...version, start_date: effectiveDate, end_date: rule.end_date } as RecurringTransactionInput);
-      const versionInsert = {
-        recurring_transaction_id: recurringTransactionId,
-        effective_date: effectiveDate,
-        ...version,
-      };
-      const { data, error } = await supabaseClient.from("recurring_transaction_versions").insert(versionInsert).select().single();
+      const { data, error } = await supabaseClient.rpc("apply_recurring_edit_from_occurrence", {
+        p_recurring_transaction_id: recurringTransactionId,
+        p_effective_date: effectiveDate,
+        p_version: version,
+      });
       if (error) throw error;
-      for (const month of monthsThroughCurrent(effectiveDate.slice(0, 7))) await materialize(month);
       return data;
     },
     onSettled: () => invalidate(queryClient),
