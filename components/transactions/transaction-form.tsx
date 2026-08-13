@@ -7,7 +7,6 @@ import { useCategories } from "@/hooks/use-categories";
 import { useProfile } from "@/hooks/use-profile";
 import { useTransactions } from "@/hooks/use-transactions";
 import { useRecurringTransactions } from "@/hooks/use-recurring-transactions";
-import type { RecurringTransaction } from "@/hooks/use-recurring-transactions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,6 +33,17 @@ type Transaction = Tables<"transactions">;
 type TransactionType = "Income" | "Expense" | "Transfer";
 export type EditScope = "occurrence" | "future" | "series";
 
+/** Recurrence fields the form uses to prefill the controls for future/series edits.
+ *  The cadence comes from the effective version for the occurrence being edited
+ *  (falling back to the base rule); the end date is rule-level (versions cannot
+ *  carry one), so it always comes from the base rule. */
+export interface RecurringRulePrefill {
+  recurrence_kind: string | null;
+  recurrence_unit: string | null;
+  recurrence_interval: number | null;
+  end_date: string | null;
+}
+
 interface TransactionFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -42,8 +52,9 @@ interface TransactionFormProps {
   defaultDate?: string;
   /** Recurring-series edit scope; present only when editing an occurrence of a recurring rule. */
   editScope?: EditScope | null;
-  /** The recurring rule being edited; used to prefill recurrence controls for future/series edits. */
-  recurringRule?: RecurringTransaction | null;
+  /** Recurrence prefill for future/series edits: cadence from the effective version
+   *  for the edited occurrence, end date from the base rule (end dates are rule-level). */
+  recurringPrefill?: RecurringRulePrefill | null;
 }
 
 interface FormErrors {
@@ -81,7 +92,7 @@ const RECURRENCE_OPTIONS: RecurrenceOption[] = [
   { key: "year-1", label: "Every year", kind: "interval", unit: "year", interval: 1 },
 ];
 
-const optionForRule = (rule: Pick<RecurringTransaction, "recurrence_kind" | "recurrence_unit" | "recurrence_interval">): RecurrenceOption =>
+const optionForRule = (rule: Pick<RecurringRulePrefill, "recurrence_kind" | "recurrence_unit" | "recurrence_interval">): RecurrenceOption =>
   RECURRENCE_OPTIONS.find(
     (option) =>
       option.kind === rule.recurrence_kind &&
@@ -98,7 +109,7 @@ export function TransactionForm({
   defaultAccountId,
   defaultDate,
   editScope = null,
-  recurringRule = null,
+  recurringPrefill = null,
 }: TransactionFormProps) {
   const { data: accounts, isLoading: accountsLoading } = useAccounts();
   const { data: categories } = useCategories();
@@ -147,11 +158,11 @@ export function TransactionForm({
       setDate(isoToDateInput(transaction.date));
       setDescription(transaction.description ?? "");
 
-      if (isRecurringEdit && (editScope === "future" || editScope === "series") && recurringRule) {
-        const option = optionForRule(recurringRule);
+      if (isRecurringEdit && (editScope === "future" || editScope === "series") && recurringPrefill) {
+        const option = optionForRule(recurringPrefill);
         setRecurrenceKey(option.key);
-        setEndMode(recurringRule.end_date ? "date" : "never");
-        setRecurrenceEndDate(recurringRule.end_date ?? "");
+        setEndMode(recurringPrefill.end_date ? "date" : "never");
+        setRecurrenceEndDate(recurringPrefill.end_date ?? "");
       } else {
         setRecurrenceKey("never");
         setEndMode("never");
@@ -169,7 +180,7 @@ export function TransactionForm({
       setEndMode("never");
       setRecurrenceEndDate("");
     }
-  }, [open, transaction, defaultAccountId, defaultDate, profile?.default_account_id, profile?.default_category_id, isRecurringEdit, editScope, recurringRule]);
+  }, [open, transaction, defaultAccountId, defaultDate, profile?.default_account_id, profile?.default_category_id, isRecurringEdit, editScope, recurringPrefill]);
 
   const validate = (): boolean => {
     const next: FormErrors = {};

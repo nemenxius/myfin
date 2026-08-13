@@ -54,7 +54,7 @@ import { monthLabel, monthWindow } from "@/lib/month";
 import { buildLedger } from "@/lib/ledger";
 import { isoToDateInput } from "@/lib/date";
 import { cn } from "@/lib/utils";
-import { TransactionForm, type EditScope } from "./transaction-form";
+import { TransactionForm, type EditScope, type RecurringRulePrefill } from "./transaction-form";
 import type { Tables } from "@/types/database";
 
 type Transaction = Tables<"transactions">;
@@ -175,7 +175,7 @@ function ScopeDialog({
 
 export function TransactionList({ month }: { month: string }) {
   const { data: transactions, isLoading, deleteTransaction } = useTransactions(month);
-  const { data: recurringRules, deleteOccurrenceOnly, deleteFromOccurrence, cancelSeries } = useRecurringTransactions();
+  const { data: recurringRules, versions, deleteOccurrenceOnly, deleteFromOccurrence, cancelSeries } = useRecurringTransactions();
   const { currency } = usePrimaryCurrency();
   const { data: categories } = useCategories();
   const { data: accounts } = useAccounts();
@@ -208,7 +208,7 @@ export function TransactionList({ month }: { month: string }) {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [editScope, setEditScope] = useState<EditScope>("occurrence");
-  const [editRule, setEditRule] = useState<RecurringTransaction | null>(null);
+  const [editPrefill, setEditPrefill] = useState<RecurringRulePrefill | null>(null);
   const [deleting, setDeleting] = useState<Transaction | null>(null);
   const [scopeDialog, setScopeDialog] = useState<{
     mode: "edit" | "delete";
@@ -261,11 +261,34 @@ export function TransactionList({ month }: { month: string }) {
 
     if (mode === "edit") {
       setEditScope(scope);
-      setEditRule(
-        transaction.recurring_transaction_id
-          ? recurringRuleMap.get(transaction.recurring_transaction_id) ?? null
-          : null
-      );
+      const baseRule = transaction.recurring_transaction_id
+        ? recurringRuleMap.get(transaction.recurring_transaction_id) ?? null
+        : null;
+      // Prefill future/series edits from the effective version for the edited
+      // occurrence (latest version with effective_date <= occurrence date),
+      // falling back to the base rule's cadence. End dates are rule-level.
+      let prefill: RecurringRulePrefill | null = null;
+      if (baseRule) {
+        const occurrenceDate = isoToDateInput(transaction.date);
+        const effective = (versions ?? []).reduce<Tables<"recurring_transaction_versions"> | null>((selected, version) => {
+          if (
+            version.recurring_transaction_id === transaction.recurring_transaction_id &&
+            version.effective_date <= occurrenceDate &&
+            (selected === null || version.effective_date > selected.effective_date)
+          ) {
+            return version;
+          }
+          return selected;
+        }, null);
+        const cadence = effective ?? baseRule;
+        prefill = {
+          recurrence_kind: cadence.recurrence_kind,
+          recurrence_unit: cadence.recurrence_unit,
+          recurrence_interval: cadence.recurrence_interval,
+          end_date: baseRule.end_date,
+        };
+      }
+      setEditPrefill(prefill);
       setEditing(transaction);
       setFormOpen(true);
     } else if (transaction.recurring_transaction_id) {
@@ -547,7 +570,7 @@ export function TransactionList({ month }: { month: string }) {
         transaction={editing}
         defaultDate={defaultDate}
         editScope={editScope}
-        recurringRule={editRule}
+        recurringPrefill={editPrefill}
       />
 
       <ScopeDialog
